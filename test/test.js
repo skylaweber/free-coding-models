@@ -2540,8 +2540,8 @@ describe('router daemon integration hardening', () => {
           const response = await postRouterChat(baseUrl)
           const payload = await response.json()
 
-          assert.equal(response.status, 503)
-          assert.equal(payload.error.code, 'all_models_failed')
+          assert.equal(response.status, 429)
+          assert.equal(payload.error.code, 'insufficient_quota')
           assert.deepEqual(payload.error.quota_exhausted, [`groq/${ROUTER_TEST_MODELS.groqFast}`])
           assert.equal(payload.error.quota_exhausted_details[0].retry_after_ms, 7000)
           assert.equal(payload.error.quota_exhausted_details[0].rate_limit_headers['x-ratelimit-remaining'], '0')

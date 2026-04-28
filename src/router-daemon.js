@@ -1119,7 +1119,33 @@ class RouterRuntime {
       }
 
       const quotaExhausted = [...this.quotaExhausted].filter((key) => tried.includes(key))
-      sendError(res, 503, `All routed models failed for set: ${set.name}`, 'service_unavailable', 'all_models_failed', requestId, {
+      const allAuthError = tried.every((key) => {
+        const [provider] = key.split('/')
+        return blockedProviders.has(provider)
+      })
+      const allQuotaError = tried.length > 0 && quotaExhausted.length === tried.length
+      const allAuthOrQuota = tried.every((key) => {
+        const [provider] = key.split('/')
+        return blockedProviders.has(provider) || quotaExhausted.includes(key)
+      })
+
+      let statusCode = 503
+      let errorCode = 'all_models_failed'
+      let errorType = 'service_unavailable'
+
+      if (tried.length > 0) {
+        if (allAuthError) {
+          statusCode = 401
+          errorCode = 'invalid_api_key'
+          errorType = 'invalid_request_error'
+        } else if (allQuotaError || allAuthOrQuota) {
+          statusCode = 429
+          errorCode = 'insufficient_quota'
+          errorType = 'insufficient_quota'
+        }
+      }
+
+      sendError(res, statusCode, `All routed models failed for set: ${set.name}`, errorType, errorCode, requestId, {
         set: set.name,
         models_tried: tried,
         quota_exhausted: quotaExhausted,
@@ -1159,6 +1185,7 @@ class RouterRuntime {
         body: JSON.stringify(upstreamBody),
         signal: controller.signal,
       })
+      clearTimeout(timeout)
       const latencyMs = Math.round(performance.now() - started)
       const text = await response.text()
       const upstreamMeta = buildUpstreamMeta(response, text)
@@ -1280,6 +1307,7 @@ class RouterRuntime {
         body: JSON.stringify(upstreamBody),
         signal: controller.signal,
       })
+      clearTimeout(timeout)
       const latencyMs = Math.round(performance.now() - started)
       const upstreamMeta = buildUpstreamMeta(response)
       if (isLikelyHtmlResponse(response.headers)) {
