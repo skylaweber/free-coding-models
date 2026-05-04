@@ -6,6 +6,10 @@
   <img src="https://img.shields.io/badge/providers-16-blue" alt="providers count">
 </p>
 
+<p align="center">
+  <img src="logo.webp" alt="free-coding-models logo" width="128">
+</p>
+
 <h1 align="center">free-coding-models</h1>
                                                     
                                                                                                                                                                                         
