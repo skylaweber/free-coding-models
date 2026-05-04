@@ -1643,6 +1643,13 @@ class RouterRuntime {
   }
 }
 
+const PREFERRED_DEFAULT_MODELS = [
+  { provider: 'nvidia', model: 'minimaxai/minimax-m2.7' },
+  { provider: 'nvidia', model: 'z-ai/glm-5.1' },
+  { provider: 'nvidia', model: 'deepseek-ai/deepseek-v4-flash' },
+  { provider: 'nvidia', model: 'openai/gpt-oss-120b' },
+]
+
 export function buildDefaultRouterSet(config = {}, maxModels = 5) {
   const keyedProviders = new Set(Object.entries(config.apiKeys || {})
     .filter(([, value]) => (Array.isArray(value) ? value.length > 0 : typeof value === 'string' && value.trim()))
@@ -1665,16 +1672,26 @@ export function buildDefaultRouterSet(config = {}, maxModels = 5) {
   const preferred = entries.some((entry) => entry.hasKey)
     ? entries.filter((entry) => entry.hasKey)
     : entries
-  preferred.sort((a, b) => {
+  const pinned = []
+  const allRemaining = [...entries]
+  for (const pref of PREFERRED_DEFAULT_MODELS) {
+    const idx = allRemaining.findIndex((e) => e.provider === pref.provider && e.model === pref.model)
+    if (idx >= 0) {
+      pinned.push(allRemaining.splice(idx, 1)[0])
+    }
+  }
+  const remaining = preferred.filter((e) => !pinned.some((p) => p.provider === e.provider && p.model === e.model))
+  remaining.sort((a, b) => {
     const tierCmp = TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier)
     if (tierCmp !== 0) return tierCmp
     const sweA = Number.parseFloat(a.sweScore) || 0
     const sweB = Number.parseFloat(b.sweScore) || 0
     return sweB - sweA
   })
+  const ordered = [...pinned, ...remaining]
   return {
     name: DEFAULT_ROUTER_SETTINGS.activeSet,
-    models: preferred.slice(0, maxModels).map((entry, index) => ({
+    models: ordered.slice(0, maxModels).map((entry, index) => ({
       provider: entry.provider,
       model: entry.model,
       priority: index + 1,
@@ -1705,21 +1722,51 @@ export function createRouterRuntimeForTest({ config, port = 0, logger = null, to
 }
 
 function ensureRouterConfigForDaemon(config) {
-  const existing = normalizeRouterConfig(config.router)
-  if (existing && Object.keys(existing.sets || {}).length > 0) {
-    config.router = { ...existing, enabled: true, onboardingSeen: true }
-    return config.router
-  }
-  const defaultSet = buildDefaultRouterSet(config)
+  // 📖 Always rebuild from favorites or defaults — no more manual set management
+  const favSet = buildRouterSetFromFavorites(config)
+  const activeSet = favSet || buildDefaultRouterSet(config)
   config.router = normalizeRouterConfig({
     ...DEFAULT_ROUTER_SETTINGS,
     enabled: true,
     onboardingSeen: true,
-    activeSet: defaultSet.name,
-    sets: { [defaultSet.name]: defaultSet },
+    activeSet: activeSet.name,
+    sets: { [activeSet.name]: activeSet },
   })
   saveConfig(config)
   return config.router
+}
+
+/**
+ * 📖 Build a router set from the user's favorites list.
+ * 📖 Each favorite "providerKey/modelId" is resolved to its source model entry.
+ * 📖 Falls back to buildDefaultRouterSet if no favorites exist.
+ */
+function buildRouterSetFromFavorites(config) {
+  const favorites = config.favorites
+  if (!Array.isArray(favorites) || favorites.length === 0) return null
+  const models = []
+  for (let i = 0; i < favorites.length; i++) {
+    const fav = favorites[i]
+    const slashIdx = fav.indexOf('/')
+    if (slashIdx < 0) continue
+    const providerKey = fav.slice(0, slashIdx)
+    const modelId = fav.slice(slashIdx + 1)
+    if (!isRouteableProvider(providerKey)) continue
+    const source = sources[providerKey]
+    if (!source) continue
+    const found = (source.models || []).find((m) => m[0] === modelId)
+    if (!found) {
+      models.push({ provider: providerKey, model: modelId, priority: i + 1 })
+      continue
+    }
+    models.push({ provider: providerKey, model: found[0], priority: i + 1 })
+  }
+  if (models.length === 0) return null
+  return {
+    name: DEFAULT_ROUTER_SETTINGS.activeSet,
+    models,
+    created: nowIso(),
+  }
 }
 
 function listenOnPort(server, port) {

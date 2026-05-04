@@ -884,7 +884,7 @@ export function createOverlayRenderers(state, deps) {
     lines.push(`  ${label('CTX')}         Context window size (128k, 200k, 256k, 1m, etc.)  ${hint('Sort:')} ${key('C')}`)
     lines.push(`              ${hint('Bigger context = the model can read more of your codebase at once without forgetting.')}`)
     lines.push('')
-    lines.push(`  ${label('Model')}       Model name (⭐ = favorited)  ${hint('Sort:')} ${key('M')}  ${hint('Favorite:')} ${key('F')}`)
+    lines.push(`  ${label('Model')}       Model name (①②③ = favorite order)  ${hint('Sort:')} ${key('M')}  ${hint('Favorite:')} ${key('F')}`)
     lines.push(`              ${hint('Star the ones you like. Press Y to switch between pinned mode and normal filter/sort mode.')}`)
     lines.push('')
     lines.push(`  ${label('Provider')}    Provider source (NIM, Groq, Cerebras, etc.)  ${hint('Sort:')} ${key('O')}  ${hint('Cycle:')} ${key('D')}`)
@@ -925,7 +925,8 @@ export function createOverlayRenderers(state, deps) {
     lines.push(`  ${key('Ctrl+P')}  Open ⚡️ command palette  ${hint('(search and run actions quickly)')}`)
     lines.push(`  ${key('E')}  Toggle configured models only  ${hint('(enabled by default)')}`)
     lines.push(`  ${key('Z')}  Cycle tool mode  ${hint('(📦 OpenCode → π Pi → 🪼 jcode → 📦 Desktop → 🦞 OpenClaw → 💘 Crush → 🪿 Goose → 🛠 Aider → 🐉 Qwen → 🤲 OpenHands → ⚡ Amp → 🦘 Rovo → ♊ Gemini)')}`)
-    lines.push(`  ${key('F')}  Toggle favorite on selected row  ${hint('(⭐ persisted across sessions)')}`)
+    lines.push(`  ${key('F')}  Toggle favorite on selected row  ${hint('(①②③ = router fallback order)')}`)
+    lines.push(`  ${key('⇧↑/⇧↓')}  Reorder selected favorite up/down  ${hint('(changes router priority)')}`)
     lines.push(`  ${key('Y')}  Toggle favorites mode  ${hint('(Pinned + always visible ↔ Normal filter/sort behavior)')}`)
     lines.push(`  ${key('X')}  Clear active text filter  ${hint('(remove custom query applied from ⚡️ Command Palette)')}`)
     lines.push(`  ${key('Q')}  Smart Recommend  ${hint('(🎯 find the best model for your task — questionnaire + live analysis)')}`)
@@ -1497,188 +1498,6 @@ export function createOverlayRenderers(state, deps) {
     return cleared.join('\n')
   }
 
-  // ─── Router Set Manager overlay renderer ─────────────────────────────────────
-  // 📖 renderSetsManager: two-pane TUI for managing router model sets.
-  // 📖 Left pane: list of all sets (★ = active). Right pane: models in selected set.
-  // 📖 Keyboard-driven: N=new, D=duplicate, R=rename, Delete=remove, A=activate,
-  // 📖 Shift+Up/Down=reorder, Tab=switch pane, Esc=close.
-  // 📖 Phase 4 — Smart Model Router.
-  function renderSetsManager() {
-    const EL = '\x1b[K'
-    const lines = []
-    const cursorLineByRow = {}
-
-    lines.push('')
-    lines.push(`  ${themeColors.accent('🚀')} ${themeColors.accentBold('free-coding-models')} ${themeColors.dim(`v${LOCAL_VERSION}`)}`)
-    lines.push(`  ${themeColors.textBold('📋 Router Set Manager')}  ${themeColors.dim('Shift+S from main table')}`)
-    lines.push('')
-
-    const setsData = state.setsData
-    const sets = setsData?.sets || {}
-    const activeSet = setsData?.activeSet || ''
-    const setNames = Object.keys(sets).sort()
-
-    if (state.setsError) {
-      lines.push(`  ${themeColors.warning(state.setsError)}`)
-      lines.push('')
-    }
-
-    // ── Edit mode banner ──────────────────────────────────────────────────────
-    if (state.setsEditMode) {
-      const editLabels = {
-        create: 'Creating new set — enter name and press Enter',
-        rename: 'Renaming set — enter new name',
-        duplicate: 'Duplicating set — enter new name',
-        'delete-confirm': 'Deleting set — press Enter to confirm',
-        'activate-confirm': 'Activating set — press Enter to confirm',
-        'add-position-picker': 'Adding model to set — choose position and press Enter',
-      }
-      lines.push(`  ${themeColors.warningBold('⚠')}  ${themeColors.warning(editLabels[state.setsEditMode] || 'Edit mode')}`)
-
-      // ── Add-position-picker: show model + insertion point list ─────────────
-      if (state.setsEditMode === 'add-position-picker') {
-        const m = state.setsAddSelectedModel
-        // 📖 Resolve models early — the outer `models` const lives after this block
-        const pickerSetName = setNames[state.setsCursor] ?? null
-        const pickerSet = pickerSetName ? (sets[pickerSetName] || null) : null
-        const pickerModels = pickerSet?.models || []
-        lines.push(`  ${themeColors.textBold('Model:')} ${m ? themeColors.info(`${m.provider}/${m.model}`) : themeColors.dim('(none)')}`)
-        lines.push(`  ${themeColors.textBold('Position:')} ${state.setsAddPositionCursor < 0 ? themeColors.success('→ Append at end') : `→ Insert at #${state.setsAddPositionCursor + 1}`}`)
-        lines.push('')
-        lines.push(`  ${themeColors.dim('Current set members:')}`)
-        // Show models with insertion point indicator
-        for (let i = 0; i < pickerModels.length; i++) {
-          const model = pickerModels[i]
-          const isAtCursor = i === state.setsAddPositionCursor
-          const marker = isAtCursor ? themeColors.successBold('❯ ') : '  '
-          const row = `${marker}${padEndDisplay(`#${i + 1}`, 3)} ${padEndDisplay(model.provider, 14)}  ${padEndDisplay(model.model, 30)}`
-          cursorLineByRow[i] = lines.length
-          lines.push(themeColors.dim(row))
-        }
-        const appendRow = `${pickerModels.length === 0 || state.setsAddPositionCursor < 0 ? themeColors.successBold('❯ ') : '  '}${padEndDisplay(`#${pickerModels.length + 1}`, 3)} ${themeColors.dim('(append at end)')}`
-        cursorLineByRow[pickerModels.length] = lines.length
-        lines.push(appendRow)
-        lines.push('')
-        lines.push(themeColors.dim('  ↑↓ Move position  •  Enter Confirm  •  Esc Cancel'))
-        // Scroll to show position picker
-        const targetLine = cursorLineByRow[state.setsAddPositionCursor < 0 ? pickerModels.length : state.setsAddPositionCursor] ?? 0
-        state.setsScrollOffset = keepOverlayTargetVisible(state.setsScrollOffset, targetLine, lines.length, state.terminalRows)
-        const { visible, offset } = sliceOverlayLines(lines, state.setsScrollOffset, state.terminalRows)
-        state.setsScrollOffset = offset
-        const tintedLines = tintOverlayLines(visible, themeColors.overlayBgSettings, state.terminalCols)
-        const cleared = tintedLines.map((l) => l + EL)
-        return cleared.join('\n')
-      }
-
-      if (state.setsEditMode !== 'delete-confirm' && state.setsEditMode !== 'activate-confirm') {
-        lines.push(`  ${themeColors.info('> ')}${state.setsEditBuffer}${themeColors.accentBold('▋')}`)
-      }
-      lines.push('')
-    }
-
-    // ── Compute pane dimensions ───────────────────────────────────────────────
-    const cols = state.terminalCols || 80
-    const leftWidth = Math.min(30, Math.floor(cols * 0.3))
-    const rightStart = leftWidth + 3
-    const rightWidth = cols - rightStart - 4
-
-    // ── Build left pane: list of sets ────────────────────────────────────────
-    lines.push(themeColors.dim(`  ${'─'.repeat(leftWidth)}  ${'─'.repeat(rightWidth)}`))
-    const leftHeader = themeColors.dim(`  ${padEndDisplay('SETS', leftWidth)}  MODELS IN SET`)
-    lines.push(leftHeader)
-    lines.push(themeColors.dim(`  ${'─'.repeat(leftWidth)}  ${'─'.repeat(rightWidth)}`))
-
-    const leftPaneRowCount = setNames.length
-
-    // ── Edit mode: show input row instead of set list ────────────────────────
-    if (state.setsEditMode === 'create') {
-      const isCursor = state.setsActivePane !== 'sets'
-      const row = `${bullet(isCursor)}${themeColors.textBold('New set: ')}${state.setsEditBuffer}${themeColors.accentBold('▋')}`
-      cursorLineByRow[0] = lines.length
-      lines.push(isCursor ? themeColors.bgCursorInstall(row) : row)
-    } else {
-      // Normal list of sets
-      for (let i = 0; i < setNames.length; i++) {
-        const name = setNames[i]
-        const isActive = name === activeSet
-        const isCursor = i === state.setsCursor && state.setsActivePane === 'sets' && !state.setsEditMode
-        const activeTag = isActive ? themeColors.success('★ ') : '   '
-        const label = padEndDisplay(name, leftWidth - 3)
-        const row = `${bullet(isCursor)}${activeTag}${themeColors.textBold(label)}`
-        cursorLineByRow[i] = lines.length
-        lines.push(isCursor ? themeColors.bgCursorInstall(row) : themeColors.dim(row))
-      }
-      if (setNames.length === 0) {
-        lines.push(themeColors.dim('  (no sets — press N to create)'))
-      }
-    }
-
-    lines.push(themeColors.dim(`  ${'─'.repeat(leftWidth)}  ${'─'.repeat(rightWidth)}`))
-    lines.push('')
-
-    // ── Right pane: models in selected set ──────────────────────────────────
-    // 📖 Clamp cursor to valid range to prevent negative-index reads
-    const clampedSetsCursor = Math.max(0, state.setsCursor ?? 0)
-    const selectedSetName = clampedSetsCursor < setNames.length ? setNames[clampedSetsCursor] : null
-    const selectedSet = selectedSetName ? (sets[selectedSetName] || null) : null
-    const models = selectedSet?.models || []
-
-    if (selectedSetName) {
-      lines.push(`  ${themeColors.textBold('Active set:')} ${themeColors.info(selectedSetName)}  ${themeColors.dim(`${models.length} model${models.length !== 1 ? 's' : ''}`)}`)
-    } else {
-      lines.push(`  ${themeColors.dim('(select a set to see its models)')}`)
-    }
-    lines.push('')
-
-    // ── Right pane: model list ───────────────────────────────────────────────
-    for (let i = 0; i < models.length; i++) {
-      const m = models[i]
-      const isCursor = i === state.setsCursor && state.setsActivePane === 'models' && !state.setsEditMode
-      const priorityStr = padEndDisplay(`#${m.priority}`, 4)
-      const providerStr = padEndDisplay(m.provider || '?', Math.min(14, Math.floor(rightWidth * 0.3)))
-      const modelStr = padEndDisplay(m.model || '?', Math.max(10, rightWidth - providerStr.length - 10))
-      const row = `${bullet(isCursor)}${priorityStr} ${providerStr}  ${modelStr}`
-      cursorLineByRow[setNames.length + 1 + i] = lines.length
-      lines.push(isCursor ? themeColors.bgCursorInstall(row) : row)
-    }
-    if (models.length === 0 && selectedSetName) {
-      lines.push(themeColors.dim('  (empty set — Shift+A to add a model)'))
-    }
-
-    lines.push('')
-
-    // ── Footer hints ────────────────────────────────────────────────────────
-    if (state.setsEditMode) {
-      lines.push(themeColors.dim('  Enter Confirm  •  Esc Cancel'))
-    } else {
-      const leftHints = [
-        ['N', 'New'],
-        ['D', 'Dup'],
-        ['R', 'Rename'],
-        ['⌫', 'Del'],
-      ]
-      const rightHints = [
-        ['Tab', 'Switch pane'],
-        ['⇧↑/⇧↓', 'Reorder'],
-        ['A', 'Activate'],
-        ['Esc', 'Close'],
-      ]
-      const leftStr = leftHints.map(([k, v]) => `${themeColors.hotkey(k)} ${themeColors.dim(v)}`).join('  ')
-      const rightStr = rightHints.map(([k, v]) => `${themeColors.hotkey(k)} ${themeColors.dim(v)}`).join('  ')
-      lines.push(`  ${themeColors.dim('Sets:')} ${leftStr}`)
-      lines.push(`  ${themeColors.dim('Models:')} ${rightStr}`)
-    }
-
-    // ── Scroll management ───────────────────────────────────────────────────
-    const targetLine = cursorLineByRow[state.setsCursor] ?? 0
-    state.setsScrollOffset = keepOverlayTargetVisible(state.setsScrollOffset, targetLine, lines.length, state.terminalRows)
-    const { visible, offset } = sliceOverlayLines(lines, state.setsScrollOffset, state.terminalRows)
-    state.setsScrollOffset = offset
-
-    const tintedLines = tintOverlayLines(visible, themeColors.overlayBgSettings, state.terminalCols)
-    const cleared = tintedLines.map((l) => l + EL)
-    return cleared.join('\n')
-  }
 
   // ─── Token Usage screen renderer ───────────────────────────────────────────
   // 📖 renderTokenUsage: shows today/all-time breakdowns, by-model breakdown,
@@ -1880,7 +1699,6 @@ export function createOverlayRenderers(state, deps) {
     renderInstalledModels,
     renderRouterDashboard,
     renderIncompatibleFallback,
-    renderSetsManager,
     renderTokenUsage,
     renderRouterOnboarding,
     renderRouterUpgradeBanner,

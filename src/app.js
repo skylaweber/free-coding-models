@@ -19,7 +19,7 @@
  *   - Direct mode flags plus an in-app Z-cycle for the public launcher set
  *   - Automatic config detection and model setup for both tools
  *   - JSON config stored in ~/.free-coding-models.json (auto-migrates from old plain-text)
- *   - Multi-provider support via sources.js (NIM/Groq/Cerebras/OpenRouter/Hugging Face/Replicate/DeepInfra/... — extensible)
+ *   - Multi-provider support via sources.js (NIM/Groq/Cerebras/OpenRouter/GitHub Models/... — extensible)
  *   - Settings screen (P key) to manage API keys, provider toggles, manual updates, and provider-key diagnostics
  *   - Install Endpoints flow (Settings / Command Palette) to push provider catalogs into OpenCode, OpenClaw, Crush, and Goose
  *   - Favorites system: toggle with F, switch pinning mode with Y, persist between sessions
@@ -111,7 +111,7 @@ import { resolveCloudflareUrl, buildPingRequest, ping, extractQuotaPercent, getP
 import { runFiableMode, filterByTierOrExit, fetchOpenRouterFreeModels } from '../src/analysis.js'
 import { PROVIDER_METADATA, ENV_VAR_NAMES, isWindows, isMac } from '../src/provider-metadata.js'
 import { parseTelemetryEnv, isTelemetryDebugEnabled, telemetryDebug, ensureTelemetryConfig, getTelemetryDistinctId, getTelemetrySystem, getTelemetryTerminal, isTelemetryEnabled, sendUsageTelemetry, sendBugReport } from '../src/telemetry.js'
-import { ensureFavoritesConfig, toFavoriteKey, syncFavoriteFlags, toggleFavoriteModel } from '../src/favorites.js'
+import { ensureFavoritesConfig, toFavoriteKey, syncFavoriteFlags, toggleFavoriteModel, reorderFavorite } from '../src/favorites.js'
 import { checkForUpdateDetailed, checkForUpdate, runUpdate, promptUpdateNotification, fetchLastReleaseDate } from './updater.js'
 import { promptApiKey } from '../src/setup.js'
 import { syncShellEnv, ensureShellRcSource, promptShellEnvMigration, removeShellEnv } from '../src/shell-env.js'
@@ -242,7 +242,11 @@ export async function runApp(cliArgs, config) {
       config.settings.shellEnvEnabled = false
       saveConfig(config)
     }
-    // 📖 'skip' (Ctrl+C) now also sets shellEnvEnabled = false — prompt won't reappear
+    if (choice === 'skip') {
+      if (!config.settings) config.settings = {}
+      config.settings.shellEnvEnabled = false
+      saveConfig(config)
+    }
   }
 
   // 📖 Default mode: use the last persisted launcher choice when valid,
@@ -543,39 +547,6 @@ export async function runApp(cliArgs, config) {
     routerDashboardEventError: null,
     routerDashboardNotice: null,
     routerDashboardNoticeTimer: null,
-    // 📖 Set Manager overlay state (Shift+S opens it). Two-pane: left=sets, right=models in selected set.
-    setsOpen: false,              // 📖 Whether the Set Manager overlay is active
-    setsData: null,               // 📖 Cached { activeSet, sets } from GET /sets
-    setsError: null,              // 📖 Error message if sets fetch failed
-    setsCursor: 0,                // 📖 Selected row in active pane
-    setsScrollOffset: 0,          // 📖 Vertical scroll offset for overlay viewport
-    setsActivePane: 'sets',       // 📖 'sets' | 'models' — which pane has keyboard focus
-    setsEditMode: null,           // 📖 null | 'create' | 'rename' | 'duplicate' | 'delete-confirm' | 'activate-confirm'
-    setsEditBuffer: '',           // 📖 Typed text while in edit modes (new name, rename)
-    setsAddPositionPickerOpen: false, // 📖 True when Shift+A triggered the position picker for adding a model
-    setsAddPositionCursor: 0,     // 📖 Cursor position in the add-model position picker (-1 = append at end)
-    setsAddModelSearch: '',       // 📖 Search filter when adding models from catalog
-    setsAddSelectedModel: null,  // 📖 The model being added via Shift+A: { provider, model, label }
-    setsLastFetchAt: 0,           // 📖 Timestamp of last GET /sets to avoid hammering the API
-    // 📖 Router footer data (polled every 30s from daemon when routerDashboardOpen has ever been true)
-    routerFooterActiveSet: null,  // 📖 Active set name from daemon
-    routerFooterRunning: false,  // 📖 True if daemon is reachable
-    routerFooterTodayTokens: 0,   // 📖 Today's total token usage
-    routerFooterAllTimeTokens: 0, // 📖 All-time total token usage
-    routerFooterRequests: 0,       // 📖 Today's request count
-    routerFooterLastFetchAt: 0,   // 📖 Timestamp of last stats fetch
-    routerFooterPollTimer: null,  // 📖 setInterval handle
-    // 📖 Token Usage overlay state (Shift+T opens it)
-    tokenUsageOpen: false,       // 📖 Whether the Token Usage overlay is active
-    tokenUsageData: null,        // 📖 Cached { today, all_time, daily7 } from /stats/tokens
-    tokenUsageError: null,        // 📖 Error message if fetch failed
-    tokenUsageScrollOffset: 0,   // 📖 Vertical scroll offset
-    tokenUsageLastFetchAt: 0,    // 📖 Timestamp of last fetch
-    // 📖 Router onboarding overlay state (shown on first launch to new users)
-    routerOnboardingOpen: false, // 📖 Whether the router onboarding overlay is active
-    routerOnboardingCursor: 0,   // 📖 Selected option (0=Yes enable, 1=Not now, 2=Learn more)
-    routerOnboardingPhase: 'ask', // 📖 'ask' | 'loading' | 'success' | 'error'
-    routerOnboardingError: null,  // 📖 Error message if enable failed
     routerOnboardingScrollOffset: 0,
     // 📖 Router upgrade banner (shown once to existing users who haven't seen router)
     routerUpgradeBannerShownAt: 0, // 📖 Timestamp when banner was shown (0 = not shown)
@@ -925,6 +896,7 @@ export async function runApp(cliArgs, config) {
     installProviderEndpoints,
     syncFavoriteFlags,
     toggleFavoriteModel,
+    reorderFavorite,
     sortResultsWithPinnedFavorites,
     adjustScrollOffset,
     applyTierFilter,
@@ -1172,7 +1144,7 @@ export async function runApp(cliArgs, config) {
     }
 
     // 📖 Router upgrade banner: inline notification for existing users not yet seen router
-    if (!state.routerOnboardingOpen && !state.settingsOpen && !state.installEndpointsOpen && !state.toolInstallPromptOpen && !state.installedModelsOpen && !state.routerDashboardOpen && !state.setsOpen && !state.tokenUsageOpen && !state.commandPaletteOpen && !state.recommendOpen && !state.feedbackOpen && !state.helpVisible && !state.changelogOpen && !state.incompatibleFallbackOpen) {
+    if (!state.routerOnboardingOpen && !state.settingsOpen && !state.installEndpointsOpen && !state.toolInstallPromptOpen && !state.installedModelsOpen && !state.routerDashboardOpen && !state.tokenUsageOpen && !state.commandPaletteOpen && !state.recommendOpen && !state.feedbackOpen && !state.helpVisible && !state.changelogOpen && !state.incompatibleFallbackOpen) {
       const banner = overlays.renderRouterUpgradeBanner()
       if (banner) tableContent = banner + '\n' + tableContent
     }
@@ -1187,8 +1159,6 @@ export async function runApp(cliArgs, config) {
         ? overlays.renderInstalledModels()
       : state.routerDashboardOpen
         ? overlays.renderRouterDashboard()
-      : state.setsOpen
-        ? overlays.renderSetsManager()
       : state.tokenUsageOpen
         ? overlays.renderTokenUsage()
       : state.routerOnboardingOpen
@@ -1355,19 +1325,13 @@ export async function runApp(cliArgs, config) {
   }, ROUTER_FOOTER_POLL_INTERVAL_MS)
   void fetchRouterFooterStats() // 📖 Initial fetch immediately so footer is populated on first render
 
-  // 📖 Router onboarding: detect first launch (config.router absent) or upgrade
-  // 📖 (existing config but router.onboardingSeen !== true) and show appropriate prompt.
+  // 📖 Router ON by default — no onboarding prompt, just auto-enable silently.
   const routerCfg = state.config?.router
-  const isFirstLaunch = !routerCfg
-  const isUpgrade = routerCfg && routerCfg.onboardingSeen !== true
-  const alreadyEnabled = routerCfg?.enabled === true
-  const forceOnboarding = cliArgs?.devMode === true
-  if (forceOnboarding || isFirstLaunch || (isUpgrade && !alreadyEnabled)) {
-    state.routerOnboardingOpen = true
-    state.routerOnboardingCursor = 0
-    state.routerOnboardingPhase = 'ask'
-    state.routerOnboardingError = null
-    state.routerOnboardingScrollOffset = 0
+  if (!routerCfg || routerCfg.onboardingSeen !== true || routerCfg.enabled !== true) {
+    if (!state.config.router) state.config.router = {}
+    state.config.router.enabled = true
+    state.config.router.onboardingSeen = true
+    saveConfig(state.config)
   }
 
   // 📖 Keep interface running forever - user can select anytime or Ctrl+C to exit

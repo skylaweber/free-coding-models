@@ -103,3 +103,25 @@ export function toggleFavoriteModel(config, providerKey, modelId) {
   if (saveResult.success) replaceConfigContents(config, latestConfig)
   return true
 }
+
+/**
+ * 📖 Move a favorite up or down in the priority order and persist.
+ * @param {Record<string, unknown>} config
+ * @param {string} providerKey
+ * @param {string} modelId
+ * @param {'up'|'down'} direction
+ * @returns {boolean} true if reorder succeeded
+ */
+export function reorderFavorite(config, providerKey, modelId, direction) {
+  const latestConfig = loadConfig()
+  ensureFavoritesConfig(latestConfig)
+  const favoriteKey = toFavoriteKey(providerKey, modelId)
+  const idx = latestConfig.favorites.indexOf(favoriteKey)
+  if (idx < 0) return false
+  const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+  if (swapIdx < 0 || swapIdx >= latestConfig.favorites.length) return false
+  ;[latestConfig.favorites[idx], latestConfig.favorites[swapIdx]] = [latestConfig.favorites[swapIdx], latestConfig.favorites[idx]]
+  const saveResult = saveConfig(latestConfig, { replaceFavorites: true })
+  if (saveResult.success) replaceConfigContents(config, latestConfig)
+  return true
+}

@@ -524,14 +524,6 @@ export function closeRouterDashboardOverlay(state) {
   stopRouterDashboardClient(state)
 }
 
-export function closeRouterSetsManagerOverlay(state) {
-  state.setsOpen = false
-  state.setsScrollOffset = 0
-  state.setsEditMode = null
-  state.setsEditBuffer = ''
-  state.setsAddPositionPickerOpen = false
-}
-
 export async function cycleRouterDashboardActiveSet(state, options = {}) {
   const fetchFn = options.fetchFn || globalThis.fetch
   const baseUrl = state.routerDashboardBaseUrl

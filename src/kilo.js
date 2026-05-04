@@ -9,12 +9,28 @@ import { loadKiloConfig, saveKiloConfig, getKiloConfigPath } from './kilo-config
 import { getApiKey } from './config.js'
 import { ENV_VAR_NAMES, OPENCODE_MODEL_MAP } from './provider-metadata.js'
 import { resolveToolBinaryPath } from './tool-bootstrap.js'
+import { sources } from '../sources.js'
 
 // 📖 Map source model IDs to Kilo built-in IDs (same as OpenCode).
 function getKiloModelId(providerKey, modelId) {
   if (providerKey === 'nvidia') return modelId.replace(/^nvidia\//, '')
   if (providerKey === 'zai') return modelId.replace(/^zai\//, '')
   return OPENCODE_MODEL_MAP[providerKey]?.[modelId] || modelId
+}
+
+function buildOpenAiCompatibleProviderConfig(providerKey) {
+  const source = sources[providerKey]
+  const envVarName = ENV_VAR_NAMES[providerKey]
+  if (!source?.url || !envVarName) return null
+  const baseURL = source.url
+    .replace(/\/chat\/completions$/i, '')
+    .replace(/\/responses$/i, '')
+  return {
+    npm: '@ai-sdk/openai-compatible',
+    name: source.name || providerKey,
+    options: { baseURL, apiKey: `{env:${envVarName}}` },
+    models: {},
+  }
 }
 
 // 📖 spawnKilo: Resolve API keys + spawn kilo CLI with correct env.
@@ -120,7 +136,7 @@ export async function startKilo(model, fcmConfig) {
       config.provider.codestral = {
         npm: '@ai-sdk/openai-compatible',
         name: 'Mistral Codestral',
-        options: { baseURL: 'https://api.mistral.ai/v1', apiKey: '{env:CODESTRAL_API_KEY}' },
+        options: { baseURL: 'https://api.mistral.ai/v1', apiKey: '{env:MISTRAL_API_KEY}' },
         models: {}
       }
     } else if (providerKey === 'hyperbolic') {
@@ -179,6 +195,9 @@ export async function startKilo(model, fcmConfig) {
         options: { baseURL: 'https://oai.endpoints.kepler.ai.cloud.ovh.net/v1', apiKey: '{env:OVH_AI_ENDPOINTS_ACCESS_TOKEN}' },
         models: {}
       }
+    } else {
+      const providerConfig = buildOpenAiCompatibleProviderConfig(providerKey)
+      if (providerConfig) config.provider[providerKey] = providerConfig
     }
   }
 

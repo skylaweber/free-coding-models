@@ -2,8 +2,8 @@
   <img src="https://img.shields.io/npm/v/free-coding-models?color=76b900&label=npm&logo=npm" alt="npm version">
   <img src="https://img.shields.io/node/v/free-coding-models?color=76b900&logo=node.js" alt="node version">
   <img src="https://img.shields.io/npm/l/free-coding-models?color=76b900" alt="license">
-  <img src="https://img.shields.io/badge/models-238-76b900?logo=nvidia" alt="models count">
-  <img src="https://img.shields.io/badge/providers-25-blue" alt="providers count">
+  <img src="https://img.shields.io/badge/models-172-76b900?logo=nvidia" alt="models count">
+  <img src="https://img.shields.io/badge/providers-15-blue" alt="providers count">
   <br>
   <img src="https://img.shields.io/badge/dependencies-1-76b900?logo=npm" alt="1 dependency">
   <img src="https://img.shields.io/badge/provenance-sigstore-blueviolet?logo=signstore" alt="npm provenance">
@@ -16,7 +16,7 @@
 
 <p align="center">
   <strong>Find the fastest free coding model in seconds</strong><br>
-  <sub>Ping 238 models across 25 AI Free providers in real-time </sub><br>  <sub> Install Free API endpoints to your favorite AI coding tool: <br>📦 OpenCode, 📦 OpenCode Desktop, 📦 OpenCode WebUI, 🦞 OpenClaw, 💘 Crush, 🪿 Goose, 🛠 Aider, ⚡️ Kilo CLI, 🐉 Qwen Code, 🤲 OpenHands, ⚡ Amp, 🔮 Hermes, ▶️ Continue, 🧠 Cline, 🛠️ Xcode, π Pi, 🦘 Rovo or ♊ Gemini in one keystroke</sub>
+  <sub>Track 172 models across 15 vetted free or free-limited AI providers in real time</sub><br>  <sub> Install Free API endpoints to your favorite AI coding tool: <br>📦 OpenCode, 📦 OpenCode Desktop, 📦 OpenCode WebUI, 🦞 OpenClaw, 💘 Crush, 🪿 Goose, 🛠 Aider, ⚡️ Kilo CLI, 🐉 Qwen Code, 🤲 OpenHands, ⚡ Amp, 🔮 Hermes, ▶️ Continue, 🧠 Cline, 🛠️ Xcode, π Pi, 🦘 Rovo or ♊ Gemini in one keystroke</sub>
 </p>
 
 
@@ -60,7 +60,7 @@ create a free account on one of the [providers](#-list-of-free-ai-providers)
 
 ## 💡 Why this tool?
 
-There are **238+ free coding models** scattered across 25 providers. Which one is fastest right now? Which one is actually stable versus just lucky on the last ping?
+There are **172 cataloged free or free-limited coding models** across 15 vetted providers. Which one is fastest right now? Which one is actually stable versus just lucky on the last ping?
 
 This CLI pings them all in parallel, shows live latency, and calculates a **live Stability Score (0-100)**. Average latency alone is misleading if a model randomly spikes to 6 seconds; the stability score measures true reliability by combining **p95 latency** (30%), **jitter/variance** (30%), **spike rate** (20%), and **uptime** (20%). 
 
@@ -74,43 +74,35 @@ It then writes the model you pick directly into your coding tool's config — so
 
 Create a free account on one provider below to get started:
 
-**238 coding models** across 25 providers, ranked by free tier generosity.
+**172 coding models** across 15 active providers, ranked by practical free-tier usefulness.
 
 | # | Provider | Models | Tier range | Free tier | Env var |
 |---|----------|--------|-----------|-----------|--------|
-| 1 | [NVIDIA NIM](https://build.nvidia.com) | 46 | S+ → C | ~40 RPM (no credit card) | `NVIDIA_API_KEY` |
+| 1 | [NVIDIA NIM](https://build.nvidia.com) | 42 | S+ → C | ~40 RPM (no credit card) | `NVIDIA_API_KEY` |
 | 2 | [Groq](https://console.groq.com/keys) | 8 | S → B | 30 RPM, 1K‑14.4K req/day (no credit card) | `GROQ_API_KEY` |
 | 3 | [Cerebras](https://cloud.cerebras.ai) | 4 | S+ → B | 30 RPM, 1M tokens/day (no credit card) | `CEREBRAS_API_KEY` |
-| 4 | [Google AI Studio](https://aistudio.google.com/apikey) | 6 | B+ → C | 15‑60 RPM, 250‑1.5K req/day (no credit card) | `GOOGLE_API_KEY` |
-| 5 | [Cloudflare Workers AI](https://dash.cloudflare.com) | 15 | S → B | 10K neurons/day, 300 RPM (no credit card) | `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` |
-| 6 | [OpenRouter](https://openrouter.ai/keys) | 25 | S+ → C | 50 req/day free, 1K/day with $10 spend | `OPENROUTER_API_KEY` |
-| 7 | [DeepInfra](https://deepinfra.com/login) | 4 | A- → B+ | 200 concurrent requests (no credit card) | `DEEPINFRA_API_KEY` |
-| 8 | [Hugging Face](https://huggingface.com/settings/tokens) | 2 | S → B | ~$0.10/month free credits | `HUGGINGFACE_API_KEY` |
-| 9 | [Perplexity API](https://www.perplexity.ai/settings/api) | 4 | A+ → B | ~50 RPM (tiered by spend) | `PERPLEXITY_API_KEY` |
-| 10 | [SambaNova](https://sambanova.ai/developers) | 13 | S+ → B | Dev tier generous quota (no credit card) | `SAMBANOVA_API_KEY` |
-| 11 | [Fireworks AI](https://fireworks.ai) | 4 | S → B+ | $1 free credits, 10 RPM without payment | `FIREWORKS_API_KEY` |
-| 12 | [Hyperbolic](https://app.hyperbolic.ai/settings) | 13 | S+ → A- | $1 free credits (permanent) | `HYPERBOLIC_API_KEY` |
-| 13 | [OVHcloud AI Endpoints](https://endpoints.ai.cloud.ovh.net) | 8 | S → B | 2 req/min/IP free, 400 RPM with key | `OVH_AI_ENDPOINTS_ACCESS_TOKEN` |
-| 14 | [Replicate](https://replicate.com/account/api-tokens) | 2 | A- → B | 6 req/min free, 3K RPM with payment | `REPLICATE_API_TOKEN` |
-| 15 | [Codestral](https://codestral.mistral.ai) | 1 | B+ | 30 RPM, 2K req/day (no credit card) | `CODESTRAL_API_KEY` |
-| 16 | [ZAI](https://z.ai) | 7 | S+ → S | Generous free quota (concurrency limited) | `ZAI_API_KEY` |
-| 17 | [Scaleway](https://console.scaleway.com/iam/api-keys) | 10 | S+ → B+ | 1M free tokens (permanent) | `SCALEWAY_API_KEY` |
-| 18 | [Alibaba DashScope](https://modelstudio.console.alibabacloud.com) | 11 | S+ → A | 1M free tokens/model (90 days) | `DASHSCOPE_API_KEY` |
-| 19 | [SiliconFlow](https://cloud.siliconflow.cn/account/ak) | 6 | S+ → A | 100 req/day + $1 free credits | `SILICONFLOW_API_KEY` |
-| 20 | [Rovo Dev CLI](https://www.atlassian.com/rovo) | 5 | S+ | 5M tokens/day (beta) | CLI tool 🦘 |
-| 21 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | 3 | S+ → A+ | 1,000 req/day (no credit card) | CLI tool ♊ |
-| 22 | [Chutes AI](https://chutes.ai) | 4 | S → A | Free community GPU (no credit card) | `CHUTES_API_KEY` |
-| 23 | [OpenCode Zen](https://opencode.ai/zen) | 7 | S+ → A+ | Free with OpenCode account | Zen models ✨ |
-| 24 | [Together AI](https://api.together.ai/settings/api-keys) | 19 | S+ → A- | ❌ No free tier — requires $5 purchase | `TOGETHER_API_KEY` |
-| 25 | [iFlow ⚠️](https://platform.iflow.cn) | 11 | S+ → A+ | Shutting down April 17, 2026 | `IFLOW_API_KEY` |
+| 4 | [Google AI Studio](https://aistudio.google.com/apikey) | 6 | S+ → A | Gemini free quotas vary by model/region | `GOOGLE_API_KEY` |
+| 5 | [GitHub Models](https://models.github.ai) | 15 | S+ → C | Quota depends on GitHub/Copilot tier | `GITHUB_TOKEN` |
+| 6 | [Cloudflare Workers AI](https://dash.cloudflare.com) | 15 | S+ → B | 10K neurons/day, 300 RPM (no credit card) | `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` |
+| 7 | [OpenRouter](https://openrouter.ai/keys) | 30 | S+ → C | 50 req/day free, 1K/day with $10 spend | `OPENROUTER_API_KEY` |
+| 8 | [SambaNova](https://cloud.sambanova.ai/apis) | 6 | S+ → A- | Small developer quota, useful for light usage | `SAMBANOVA_API_KEY` |
+| 9 | [OVHcloud AI Endpoints](https://endpoints.ai.cloud.ovh.net) | 10 | S → B | 2 req/min/IP free, 400 RPM with key | `OVH_AI_ENDPOINTS_ACCESS_TOKEN` |
+| 10 | [Codestral / Mistral](https://console.mistral.ai/api-keys) | 1 | B+ | 30 RPM, 2K req/day | `MISTRAL_API_KEY` |
+| 11 | [ZAI](https://z.ai) | 2 | S | Free Flash models only | `ZAI_API_KEY` |
+| 12 | [Scaleway](https://console.scaleway.com/iam/api-keys) | 10 | S+ → B | 1M free tokens | `SCALEWAY_API_KEY` |
+| 13 | [Alibaba DashScope](https://modelstudio.console.alibabacloud.com) | 9 | S+ → A | 1M free tokens/model, Singapore, 90 days | `DASHSCOPE_API_KEY` |
+| 14 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | 6 | S+ → A | 1,000 req/day with personal Google account | CLI tool ♊ |
+| 15 | [OpenCode Zen](https://opencode.ai/zen) | 8 | S+ → A | Free with OpenCode account | Zen models ✨ |
 
 > 💡 One key is enough. Add more at any time with **`P`** inside the TUI.
+
+> 🧹 Audit cleanup: `iFlow` was removed because it shut down on April 17, 2026. `Together AI`, `Perplexity API`, `DeepInfra`, `Replicate`, `Fireworks`, `Hyperbolic`, `Hugging Face`, `SiliconFlow`, `Chutes AI`, and `Rovo` were removed from the active free catalog because they are paid, trial-credit only, too tiny to be useful, unclear as a stable free API, or tool-specific rather than a generally usable free provider.
 
 ---
 
 ## 🆓 Other Free AI Resources
 
-**Curated free resources outside the CLI** — IDE extensions, coding agents, GitHub lists, and trial credits.
+**Curated resources outside the active CLI catalog** — IDE extensions, coding agents, GitHub lists, and providers that are useful but not clean enough for the core free-provider table.
 
 ### 📚 Awesome Lists (curated by the community)
 
@@ -126,8 +118,8 @@ Create a free account on one provider below to get started:
 | IDE | Free tier | Credit card |
 |-----|-----------|-------------|
 | [Qwen Code](https://github.com/QwenLM/qwen-code) | 2,000 requests/day | No |
-| [Rovo Dev CLI](https://www.atlassian.com/rovo) | 5M tokens/day (beta) | No |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | 100–250 requests/day | No |
+| [Rovo Dev CLI](https://www.atlassian.com/rovo) | Conditional Atlassian/Rovo allowance | No |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | 1,000 requests/day | No |
 | [Jules](https://jules.google/) | 15 tasks/day | No |
 | [AWS Kiro](https://kiro.dev/) | 50 credits/month | No |
 | [Trae](https://trae.ai/) | 10 fast + 50 slow requests/month | No |
@@ -146,23 +138,22 @@ Create a free account on one provider below to get started:
 | Provider | Free limits | Notable models |
 |----------|-------------|----------------|
 | [OpenRouter](https://openrouter.ai/keys) | 50 req/day, 1K/day with $10 purchase | Qwen3-Coder, Llama 3.3 70B, Gemma 3 |
-| [Google AI Studio](https://aistudio.google.com/apikey) | 5–500 req/day (varies by model) | Gemini 2.5 Flash, Gemma 3 |
-| [NVIDIA NIM](https://build.nvidia.com) | 40 RPM | Llama 3.3 70B, Mistral Large, Qwen3 235B |
-| [Groq](https://console.groq.com/keys) | 1K–14.4K req/day (model-dependent) | Llama 3.3 70B, Llama 4 Scout, Kimi K2 |
+| [Google AI Studio](https://aistudio.google.com/apikey) | Varies by Gemini model and region | Gemini 3.1 Pro Preview, Gemini 2.5 Flash |
+| [NVIDIA NIM](https://build.nvidia.com) | ~40 RPM | MiniMax M2.7, GLM 5.1, Kimi K2.6 |
+| [GitHub Models](https://models.github.ai) | Depends on GitHub/Copilot tier | GPT-4.1, DeepSeek V3, Llama 4 |
+| [Groq](https://console.groq.com/keys) | 1K–14.4K req/day (model-dependent) | Llama 3.3 70B, Llama 4 Scout, GPT-OSS |
 | [Cerebras](https://cloud.cerebras.ai/) | 30 RPM, 1M tokens/day | Qwen3-235B, Llama 3.1 70B, GPT-OSS 120B |
 | [Cohere](https://cohere.com/) | 20 RPM, 1K/month | Command R+, Aya Expanse 32B |
 | [Mistral La Plateforme](https://console.mistral.ai/) | 1 req/s, 1B tokens/month | Mistral Large 3, Small 3.1 |
 | [Cloudflare Workers AI](https://dash.cloudflare.com) | 10K neurons/day | Llama 3.3 70B, QwQ 32B, 47+ models |
-| [GitHub Models](https://github.com/marketplace/models) | Depends on Copilot tier | GPT-4o, DeepSeek-R1, Llama 3.3 |
-| [SiliconFlow](https://cloud.siliconflow.cn/account/ak) | 1K RPM, 50K TPM | Qwen3-8B, DeepSeek-R1, GLM-4.1V |
-| [HuggingFace](https://huggingface.com/settings/tokens) | ~$0.10/month credits | Llama 3.3 70B, Qwen2.5 72B |
+| [OVHcloud AI Endpoints](https://endpoints.ai.cloud.ovh.net) | 2 req/min/IP sandbox | GPT-OSS, Qwen3, Mistral |
 
 ### 💰 Providers with Trial Credits
 
 | Provider | Credits | Duration |
 |----------|---------|----------|
-| [Hyperbolic](https://app.hyperbolic.ai/) | $1 free | Permanent |
-| [Fireworks](https://fireworks.ai/) | $1 | Permanent |
+| [Hyperbolic](https://app.hyperbolic.ai/) | $1 | Trial/promo |
+| [Fireworks](https://fireworks.ai/) | $1 | Trial/promo |
 | [Nebius](https://tokenfactory.nebius.com/) | $1 | Permanent |
 | [SambaNova Cloud](https://cloud.sambanova.ai/) | $5 | 3 months |
 | [AI21](https://studio.ai21.com/) | $10 | 3 months |
@@ -173,6 +164,8 @@ Create a free account on one provider below to get started:
 | [Modal](https://modal.com) | $5/month | Monthly |
 | [Inference.net](https://inference.net) | $1 (+ $25 on survey) | Permanent |
 | [Novita](https://novita.ai/) | $0.5 | 1 year |
+
+These trial-credit providers are deliberately not treated as core providers unless their free allowance is practical for recurring coding use. A $0.10/month or $1 one-time credit is useful for experimentation, not for this CLI's default promise.
 
 ### 🎓 Free with Education/Developer Programs
 
@@ -362,8 +355,8 @@ Press **`Z`** in the TUI to cycle between tools without restarting.
 **🦘 Rovo Dev CLI**
 - Provider: [Atlassian Rovo](https://www.atlassian.com/rovo)
 - Install: [Installation Guide](https://support.atlassian.com/rovo/docs/install-and-run-rovo-dev-cli-on-your-device/)
-- Free tier: 5M tokens/day (beta, requires Atlassian account)
-- Model: Claude Sonnet 4 (72.7% SWE-bench)
+- Free tier: conditional Atlassian/Rovo allowance, not a general free API provider
+- Catalog status: not included in the active free-provider table because access depends on Rovo availability for your account/site
 - Launch: `free-coding-models --rovo` or press `Z` until Rovo mode
 - Features: Jira/Confluence integration, MCP server support
 
@@ -371,7 +364,7 @@ Press **`Z`** in the TUI to cycle between tools without restarting.
 - Provider: [Google Gemini](https://github.com/google-gemini/gemini-cli)
 - Install: `npm install -g @google/gemini-cli`
 - Free tier: 1,000 requests/day (personal Google account, no credit card)
-- Models: Gemini 3 Pro (76.2% SWE-bench), Gemini 2.5 Pro, Gemini 2.5 Flash
+- Models: Gemini 3.1 Pro Preview, Gemini 3 Flash Preview, Gemini 2.5 Pro, Gemini 2.5 Flash
 - Launch: `free-coding-models --gemini` or press `Z` until Gemini mode
 - Features: OpenAI-compatible API support, MCP server support, Google Search grounding
 
@@ -385,12 +378,12 @@ Press **`Z`** in the TUI to cycle between tools without restarting.
 |-------|------|-----------|---------|
 | Big Pickle | S+ | 72.0% | 200k |
 | MiniMax M2.5 Free | S+ | 80.2% | 200k |
-| MiMo V2 Pro Free | S+ | 78.0% | 1M |
-| MiMo V2 Omni Free | S | 64.0% | 128k |
-| MiMo V2 Flash Free | S+ | 73.4% | 256k |
-| Nemotron 3 Super Free | A+ | 52.0% | 128k |
-| GPT 5 Nano | S | 65.0% | 128k |
-| Trinity Large Preview Free | S | 62.0% | 128k |
+| Nemotron 3 Super Free | A+ | 52.0% | 1M |
+| GPT 5 Nano | S | 65.0% | 400k |
+| HY3 Preview Free | A+ | - | 128k |
+| Ling 2.6 Flash Free | S | - | 128k |
+| Trinity Large Preview Free | S | - | 128k |
+| Trinity Mini Preview Free | A | - | 128k |
 
 To use Zen models: sign up at [opencode.ai/auth](https://opencode.ai/auth) and enter your Zen API key via `P` (Settings). Zen models appear in the main table and auto-switch to OpenCode CLI on launch.
 
@@ -460,7 +453,7 @@ When a tool mode is active (via `Z`), models incompatible with that tool are hig
 
 ## ✨ Features
 
-- **Parallel pings** — all 238 models tested simultaneously via native `fetch`
+- **Parallel pings** — all 166 API/Zen-callable models tested simultaneously via native `fetch` (172 total cataloged models including CLI-only Gemini rows)
 - **Adaptive monitoring** — 2s burst for 60s → 10s normal → 30s idle
 - **Stability score** — composite 0–100 (p95 latency, jitter, spike rate, uptime)
 - **Smart ranking** — top 3 highlighted 🥇🥈🥉
@@ -499,7 +492,7 @@ We welcome contributions — issues, PRs, new provider integrations.
 
 ## ⚖️ Model Licensing & Commercial Use
 
-**Short answer:** All 238 models allow **commercial use of generated output (including code)**. You own what the models generate for you.
+**Short answer:** The 172 cataloged models are API/CLI-served models where generated-output ownership is generally granted by the provider/model terms. Always verify current provider terms for high-stakes commercial use.
 
 ### Output Ownership
 
@@ -509,23 +502,23 @@ For every model in this tool, **you own the generated output** — code, text, o
 
 | License | Models | Commercial Output |
 |---------|--------|:-----------------:|
-| **Apache 2.0** | Qwen3/Qwen3.5/Qwen2.5 Coder, GPT-OSS 120B/20B, Devstral Small 2, Gemma 4, MiMo V2 Flash | ✅ Unrestricted |
-| **MIT** | GLM 4.5/4.6/4.7/5, MiniMax M2.1, Devstral 2 | ✅ Unrestricted |
-| **Modified MIT** | Kimi K2/K2.5 (>100M MAU → display "Kimi K2" branding) | ✅ With attribution at scale |
+| **Apache 2.0** | Qwen3/Qwen3.5/Qwen2.5 Coder, GPT-OSS 120B/20B, Devstral 2, Gemma 4 | ✅ Unrestricted |
+| **MIT / permissive model terms** | GLM Flash, MiniMax M2.x, Devstral 2 | ✅ Provider/model terms apply |
+| **Modified MIT** | Kimi K2/K2.6 (>100M MAU → display "Kimi K2" branding) | ✅ With attribution at scale |
 | **Llama Community License** | Llama 3.3 70B, Llama 4 Scout/Maverick | ✅ Attribution required. >700M MAU → separate Meta license |
-| **DeepSeek License** | DeepSeek V3/V3.1/V3.2, R1 | ✅ Use restrictions on model (no military, no harm) — output is yours |
+| **DeepSeek License** | DeepSeek V3/V3.1/V3.2/V4 family | ✅ Use restrictions on model (no military, no harm) — output is yours |
 | **NVIDIA Nemotron License** | Nemotron Super/Ultra/Nano | ✅ Updated Mar 2026, now near-Apache 2.0 permissive |
 | **MiniMax Model License** | MiniMax M2, M2.5 | ✅ Royalty-free, non-exclusive. Prohibited uses policy applies to model |
-| **Proprietary (API)** | Claude (Rovo), Gemini (CLI), Perplexity Sonar, Mistral Large, Codestral | ✅ You own outputs per provider ToS |
-| **OpenCode Zen** | Big Pickle, MiMo V2 Pro/Flash/Omni Free, GPT 5 Nano, MiniMax M2.5 Free, Nemotron 3 Super Free | ✅ Per OpenCode Zen ToS |
+| **Proprietary / hosted API terms** | Gemini, GitHub Models, Mistral/Codestral, OpenRouter-hosted models | ✅ Provider ToS applies |
+| **OpenCode Zen** | Big Pickle, GPT 5 Nano, MiniMax M2.5 Free, Nemotron 3 Super Free, HY3/Ling/Trinity previews | ✅ Per OpenCode Zen ToS |
 
 ### Key Points
 
 1. **Generated code is yours** — no model claims ownership of your output
-2. **Apache 2.0 / MIT models** (Qwen, GLM, GPT-OSS, MiMo, Devstral Small) are the most permissive — no strings attached
+2. **Apache 2.0 / permissive model families** (Qwen, GLM Flash, GPT-OSS, Devstral, Gemma) are the lowest-friction options
 3. **Llama** requires "Built with Llama" attribution; >700M MAU needs a Meta license
 4. **DeepSeek / MiniMax** have use-restriction policies (no military use) that govern the model, not your generated code
-5. **API-served models** (Claude, Gemini, Perplexity) grant full output ownership under their terms of service
+5. **API-served models** (Gemini, GitHub Models, OpenRouter, Mistral, etc.) grant output ownership under their current terms of service
 
 > ⚠️ **Disclaimer:** This is a summary, not legal advice. License terms can change. Always verify the current license on the model's official page before making legal decisions.
 

@@ -39,26 +39,21 @@ export const PROVIDER_CAPABILITIES = {
   groq: { telemetryType: 'header', supportsEndpoint: false, usageDisplay: 'percent', resetCadence: 'daily' },
   cerebras: { telemetryType: 'header', supportsEndpoint: false, usageDisplay: 'percent', resetCadence: 'unknown' },
   sambanova: { telemetryType: 'header', supportsEndpoint: false, usageDisplay: 'percent', resetCadence: 'unknown' },
-  deepinfra: { telemetryType: 'header', supportsEndpoint: false, usageDisplay: 'percent', resetCadence: 'unknown' },
-  fireworks: { telemetryType: 'header', supportsEndpoint: false, usageDisplay: 'percent', resetCadence: 'unknown' },
-  together: { telemetryType: 'header', supportsEndpoint: false, usageDisplay: 'percent', resetCadence: 'unknown' },
-  hyperbolic: { telemetryType: 'header', supportsEndpoint: false, usageDisplay: 'percent', resetCadence: 'unknown' },
+  'github-models': { telemetryType: 'header', supportsEndpoint: false, usageDisplay: 'percent', resetCadence: 'unknown' },
   scaleway: { telemetryType: 'header', supportsEndpoint: false, usageDisplay: 'percent', resetCadence: 'unknown' },
   googleai: { telemetryType: 'header', supportsEndpoint: false, usageDisplay: 'percent', resetCadence: 'daily' },
   codestral: { telemetryType: 'header', supportsEndpoint: false, usageDisplay: 'percent', resetCadence: 'daily' },
-  perplexity: { telemetryType: 'header', supportsEndpoint: false, usageDisplay: 'percent', resetCadence: 'unknown' },
   qwen: { telemetryType: 'header', supportsEndpoint: false, usageDisplay: 'percent', resetCadence: 'unknown' },
+  ovhcloud: { telemetryType: 'header', supportsEndpoint: false, usageDisplay: 'percent', resetCadence: 'unknown' },
 
   // Providers that have a dedicated usage/credits endpoint
   openrouter: { telemetryType: 'endpoint', supportsEndpoint: true, usageDisplay: 'percent', resetCadence: 'unknown' },
-  siliconflow: { telemetryType: 'endpoint', supportsEndpoint: true, usageDisplay: 'ok',      resetCadence: 'unknown' },
 
   // Providers with no reliable quota signal
-  huggingface: { telemetryType: 'unknown', supportsEndpoint: false, usageDisplay: 'ok', resetCadence: 'none' },
-  replicate: { telemetryType: 'unknown', supportsEndpoint: false, usageDisplay: 'ok', resetCadence: 'none' },
   cloudflare: { telemetryType: 'unknown', supportsEndpoint: false, usageDisplay: 'ok', resetCadence: 'daily' },
   zai: { telemetryType: 'unknown', supportsEndpoint: false, usageDisplay: 'ok', resetCadence: 'none' },
-  iflow: { telemetryType: 'unknown', supportsEndpoint: false, usageDisplay: 'ok', resetCadence: 'none' },
+  gemini: { telemetryType: 'unknown', supportsEndpoint: false, usageDisplay: 'ok', resetCadence: 'daily' },
+  'opencode-zen': { telemetryType: 'unknown', supportsEndpoint: false, usageDisplay: 'ok', resetCadence: 'unknown' },
 }
 
 /** Fallback for unrecognized providers */

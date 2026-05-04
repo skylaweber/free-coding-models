@@ -538,9 +538,15 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
       ? providerName.slice(0, 4) + '…'
       : providerName
     const source = themeColors.provider(r.providerKey, providerDisplay.padEnd(wSource))
-    // 📖 Favorites: always reserve 2 display columns at the start of Model column.
-    // 📖 🎯 (2 cols) for recommended, ⭐ (2 cols) for favorites, '  ' (2 spaces) for non-favorites — keeps alignment stable.
-    const favoritePrefix = r.isRecommended ? '🎯' : r.isFavorite ? '⭐' : '  '
+    const CIRCLED = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱','⑲','⑳']
+    let favoritePrefix = '  '
+    if (r.isRecommended) {
+      favoritePrefix = '🎯'
+    } else if (r.isFavorite && r.favoriteRank < CIRCLED.length) {
+      favoritePrefix = CIRCLED[r.favoriteRank]
+    } else if (r.isFavorite) {
+      favoritePrefix = '⭐'
+    }
     const prefixDisplayWidth = 2
     const nameWidth = Math.max(0, W_MODEL - prefixDisplayWidth)
     const name = favoritePrefix + r.label.slice(0, nameWidth).padEnd(nameWidth)
@@ -888,7 +894,6 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
       '  ' + paletteLabel + themeColors.dim(`  •  `) +
       hotkey('Q', ' Smart Recommend') + themeColors.dim(`  •  `) +
       hotkey('Shift+R', ' Router') + themeColors.dim(`  •  `) +
-      hotkey('Shift+S', ' Sets') + themeColors.dim(`  •  `) +
       hotkey('G', ' Theme') + themeColors.dim(`  •  `) +
       hotkey('I', ' Feedback, bugs & requests')
     )
@@ -990,7 +995,7 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
       lines.push(
         '  ' + themeColors.error('○') + ' ' +
         themeColors.dim('Router:') + ' ' + themeColors.dim('daemon not running') +
-        themeColors.dim('  •  Shift+R Dashboard  •  Shift+S Sets')
+        themeColors.dim('  •  Shift+R Dashboard')
       )
     }
 

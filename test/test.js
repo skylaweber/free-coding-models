@@ -116,7 +116,7 @@ function mockResult(overrides = {}) {
 const ROUTER_TEST_MODELS = Object.freeze({
   groqFast: 'llama-3.3-70b-versatile',
   groqBackup: 'openai/gpt-oss-120b',
-  nvidiaFast: 'deepseek-ai/deepseek-v3.2',
+  nvidiaFast: 'deepseek-ai/deepseek-v4-flash',
 })
 
 function listenOnRandomPort(server) {
@@ -584,20 +584,20 @@ describe('provider key test model discovery', () => {
 
   it('prioritizes the SambaNova override ahead of discovered and static ids', () => {
     assert.deepEqual(
-      listProviderTestModels('sambanova', sources.sambanova, ['Qwen3-235B', 'DeepSeek-V3-0324']).slice(0, 4),
-      ['DeepSeek-V3-0324', 'Qwen3-235B', 'MiniMax-M2.5', 'DeepSeek-R1-0528']
+      listProviderTestModels('sambanova', sources.sambanova, ['Qwen3-235B', 'DeepSeek-V3.1']).slice(0, 4),
+      ['MiniMax-M2.5', 'DeepSeek-V3.1', 'Qwen3-235B', 'DeepSeek-V3.2']
     )
   })
 
   it('uses discovered repo-known ids before the static catalog head for NVIDIA', () => {
     assert.deepEqual(
-      listProviderTestModels('nvidia', sources.nvidia, ['openai/gpt-oss-120b', 'deepseek-ai/deepseek-v3.2']).slice(0, 5),
+      listProviderTestModels('nvidia', sources.nvidia, ['openai/gpt-oss-120b', 'deepseek-ai/deepseek-v4-flash']).slice(0, 5),
       [
-        'deepseek-ai/deepseek-v3.1-terminus',
+        'deepseek-ai/deepseek-v4-flash',
         'openai/gpt-oss-120b',
-        'deepseek-ai/deepseek-v3.2',
-        'moonshotai/kimi-k2.5',
-        'z-ai/glm5',
+        'minimaxai/minimax-m2.7',
+        'z-ai/glm-5.1',
+        'moonshotai/kimi-k2.6',
       ]
     )
   })
@@ -1515,7 +1515,7 @@ describe('renderToolInstallPrompt', () => {
       toolInstallPromptScrollOffset: 0,
       toolInstallPromptMode: 'opencode',
       toolInstallPromptModel: {
-        label: 'DeepSeek V3.2',
+        label: 'DeepSeek V4 Flash',
       },
       toolInstallPromptPlan: installPlan,
       toolInstallPromptErrorMsg: null,
@@ -1560,7 +1560,7 @@ describe('renderToolInstallPrompt', () => {
     const output = renderers.renderToolInstallPrompt()
     assert.match(output, /Missing Tool/)
     assert.match(output, /npm install -g opencode-ai/)
-    assert.match(output, /DeepSeek V3\.2/)
+    assert.match(output, /DeepSeek V4 Flash/)
   })
 })
 
@@ -1732,7 +1732,7 @@ describe('telemetry', () => {
         session_id: 'session_test',
         tool_mode: 'openclaw',
         provider_key: 'nvidia',
-        model_id: 'deepseek-ai/deepseek-v3.2',
+        model_id: 'deepseek-ai/deepseek-v4-flash',
         action_type: 'launch_model',
         ignored: undefined,
       },
@@ -1743,7 +1743,7 @@ describe('telemetry', () => {
     assert.equal(properties.session_id, 'session_test')
     assert.equal(properties.tool_mode, 'openclaw')
     assert.equal(properties.provider_key, 'nvidia')
-    assert.equal(properties.model_id, 'deepseek-ai/deepseek-v3.2')
+    assert.equal(properties.model_id, 'deepseek-ai/deepseek-v4-flash')
     assert.equal(properties.action_type, 'launch_model')
     assert.equal('ignored' in properties, false)
   })
@@ -1783,8 +1783,8 @@ describe('telemetry', () => {
           action_type: 'launch_model',
           tool_mode: 'openclaw',
           provider_key: 'nvidia',
-          model_id: 'deepseek-ai/deepseek-v3.2',
-          model_label: 'DeepSeek V3.2',
+          model_id: 'deepseek-ai/deepseek-v4-flash',
+          model_label: 'DeepSeek V4 Flash',
           model_tier: 'S+',
         },
       })
@@ -1799,8 +1799,8 @@ describe('telemetry', () => {
       assert.equal(useBody.properties.session_id, 'session_test_user')
       assert.equal(useBody.properties.tool_mode, 'openclaw')
       assert.equal(useBody.properties.provider_key, 'nvidia')
-      assert.equal(useBody.properties.model_id, 'deepseek-ai/deepseek-v3.2')
-      assert.equal(useBody.properties.model_label, 'DeepSeek V3.2')
+      assert.equal(useBody.properties.model_id, 'deepseek-ai/deepseek-v4-flash')
+      assert.equal(useBody.properties.model_label, 'DeepSeek V4 Flash')
       assert.equal(useBody.properties.model_tier, 'S+')
     } finally {
       global.fetch = originalFetch
@@ -2283,7 +2283,7 @@ describe('buildPersistedConfig', () => {
           providerKey: 'nvidia',
           toolMode: 'opencode',
           scope: 'selected',
-          modelIds: ['deepseek-ai/deepseek-v3.2'],
+          modelIds: ['deepseek-ai/deepseek-v4-flash'],
           lastSyncedAt: '2026-03-10T09:00:00.000Z',
         },
       ],
@@ -2297,7 +2297,7 @@ describe('buildPersistedConfig', () => {
         providerKey: 'nvidia',
         toolMode: 'opencode',
         scope: 'selected',
-        modelIds: ['deepseek-ai/deepseek-v3.2'],
+        modelIds: ['deepseek-ai/deepseek-v4-flash'],
         lastSyncedAt: '2026-03-10T09:00:00.000Z',
       },
     ])
@@ -2365,12 +2365,19 @@ describe('router config helpers', () => {
     assert.deepEqual(router.sets['fast-coding'].models.map((entry) => entry.provider), ['cerebras', 'groq'])
   })
 
-  it('builds a default router set from providers that already have keys', () => {
-    const set = buildDefaultRouterSet({ apiKeys: { groq: 'gsk-test' } }, 3)
+  it('builds a default router set with pinned models first, then keyed providers', () => {
+    const set = buildDefaultRouterSet({ apiKeys: { groq: 'gsk-test' } }, 6)
     assert.equal(set.name, DEFAULT_ROUTER_SETTINGS.activeSet)
-    assert.equal(set.models.length, 3)
-    assert.ok(set.models.every((entry) => entry.provider === 'groq'))
-    assert.deepEqual(set.models.map((entry) => entry.priority), [1, 2, 3])
+    assert.equal(set.models[0].provider, 'nvidia')
+    assert.equal(set.models[0].model, 'minimaxai/minimax-m2.7')
+    assert.equal(set.models[1].provider, 'nvidia')
+    assert.equal(set.models[1].model, 'z-ai/glm-5.1')
+    assert.equal(set.models[2].provider, 'nvidia')
+    assert.equal(set.models[2].model, 'deepseek-ai/deepseek-v4-flash')
+    assert.equal(set.models[3].provider, 'nvidia')
+    assert.equal(set.models[3].model, 'openai/gpt-oss-120b')
+    assert.ok(set.models.slice(4).every((entry) => entry.provider === 'groq'))
+    assert.deepEqual(set.models.map((entry) => entry.priority), set.models.map((_, i) => i + 1))
   })
 
   it('formats errors with the OpenAI-compatible router shape', () => {
@@ -3081,52 +3088,52 @@ describe('tool launch preparation', () => {
     mkdirSync(dir, { recursive: true })
     const paths = createToolPaths(dir)
     const config = { apiKeys: { nvidia: 'nvapi-test' } }
-    const model = { providerKey: 'nvidia', modelId: 'deepseek-ai/deepseek-v3.2', label: 'DeepSeek V3.2' }
+    const model = { providerKey: 'nvidia', modelId: 'deepseek-ai/deepseek-v4-flash', label: 'DeepSeek V4 Flash' }
 
     try {
       const aiderPlan = prepareExternalToolLaunch('aider', model, config, { paths, inheritedEnv: { PATH: process.env.PATH || '' } })
       assert.equal(aiderPlan.command, 'aider')
-      assert.deepEqual(aiderPlan.args, ['--model', 'openai/deepseek-ai/deepseek-v3.2'])
-      assert.match(readFileSync(paths.aiderConfigPath, 'utf8'), /model: openai\/deepseek-ai\/deepseek-v3\.2/)
+      assert.deepEqual(aiderPlan.args, ['--model', 'openai/deepseek-ai/deepseek-v4-flash'])
+      assert.match(readFileSync(paths.aiderConfigPath, 'utf8'), /model: openai\/deepseek-ai\/deepseek-v4-flash/)
 
       const crushPlan = prepareExternalToolLaunch('crush', model, config, { paths, inheritedEnv: { PATH: process.env.PATH || '' } })
       const crushConfig = JSON.parse(readFileSync(paths.crushConfigPath, 'utf8'))
       assert.equal(crushPlan.command, 'crush')
-      assert.equal(crushConfig.models.large.model, 'deepseek-ai/deepseek-v3.2')
+      assert.equal(crushConfig.models.large.model, 'deepseek-ai/deepseek-v4-flash')
       assert.equal(crushConfig.models.large.provider, 'freeCodingModels')
-      assert.equal(crushConfig.models.small.model, 'deepseek-ai/deepseek-v3.2')
+      assert.equal(crushConfig.models.small.model, 'deepseek-ai/deepseek-v4-flash')
 
       const goosePlan = prepareExternalToolLaunch('goose', model, config, { paths, inheritedEnv: { PATH: process.env.PATH || '' } })
       const gooseConfig = readFileSync(paths.gooseConfigPath, 'utf8')
       assert.equal(goosePlan.command, 'goose')
       assert.match(gooseConfig, /GOOSE_PROVIDER: fcm-nvidia/)
-      assert.match(gooseConfig, /GOOSE_MODEL: deepseek-ai\/deepseek-v3\.2/)
+      assert.match(gooseConfig, /GOOSE_MODEL: deepseek-ai\/deepseek-v4-flash/)
 
       const qwenPlan = prepareExternalToolLaunch('qwen', model, config, { paths, inheritedEnv: { PATH: process.env.PATH || '' } })
       const qwenConfig = JSON.parse(readFileSync(paths.qwenConfigPath, 'utf8'))
       assert.equal(qwenPlan.command, 'qwen')
-      assert.equal(qwenConfig.model, 'deepseek-ai/deepseek-v3.2')
-      assert.equal(qwenConfig.modelProviders.openai[0].id, 'deepseek-ai/deepseek-v3.2')
+      assert.equal(qwenConfig.model, 'deepseek-ai/deepseek-v4-flash')
+      assert.equal(qwenConfig.modelProviders.openai[0].id, 'deepseek-ai/deepseek-v4-flash')
 
       const openHandsPlan = prepareExternalToolLaunch('openhands', model, config, { paths, inheritedEnv: { PATH: process.env.PATH || '' } })
       const openHandsEnv = readFileSync(paths.openHandsEnvPath, 'utf8')
       assert.equal(openHandsPlan.command, 'openhands')
       assert.deepEqual(openHandsPlan.args, ['--override-with-envs'])
-      assert.match(openHandsEnv, /OPENAI_MODEL="deepseek-ai\/deepseek-v3\.2"/)
-      assert.match(openHandsEnv, /LLM_MODEL="openai\/deepseek-ai\/deepseek-v3\.2"/)
+      assert.match(openHandsEnv, /OPENAI_MODEL="deepseek-ai\/deepseek-v4-flash"/)
+      assert.match(openHandsEnv, /LLM_MODEL="openai\/deepseek-ai\/deepseek-v4-flash"/)
 
       const ampPlan = prepareExternalToolLaunch('amp', model, config, { paths, inheritedEnv: { PATH: process.env.PATH || '' } })
       const ampConfig = JSON.parse(readFileSync(paths.ampConfigPath, 'utf8'))
       assert.equal(ampPlan.command, 'amp')
-      assert.equal(ampConfig['amp.model'], 'deepseek-ai/deepseek-v3.2')
+      assert.equal(ampConfig['amp.model'], 'deepseek-ai/deepseek-v4-flash')
 
       const piPlan = prepareExternalToolLaunch('pi', model, config, { paths, inheritedEnv: { PATH: process.env.PATH || '' } })
       const piModels = JSON.parse(readFileSync(paths.piModelsPath, 'utf8'))
       const piSettings = JSON.parse(readFileSync(paths.piSettingsPath, 'utf8'))
       assert.equal(piPlan.command, 'pi')
-      assert.deepEqual(piPlan.args, ['--provider', 'nvidia', '--model', 'deepseek-ai/deepseek-v3.2', '--api-key', piPlan.apiKey])
-      assert.equal(piModels.providers.nvidia.models[0].id, 'deepseek-ai/deepseek-v3.2')
-      assert.equal(piSettings.defaultModel, 'deepseek-ai/deepseek-v3.2')
+      assert.deepEqual(piPlan.args, ['--provider', 'nvidia', '--model', 'deepseek-ai/deepseek-v4-flash', '--api-key', piPlan.apiKey])
+      assert.equal(piModels.providers.nvidia.models[0].id, 'deepseek-ai/deepseek-v4-flash')
+      assert.equal(piSettings.defaultModel, 'deepseek-ai/deepseek-v4-flash')
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
@@ -3168,7 +3175,7 @@ describe('endpoint install tracking', () => {
         providerKey: 'nvidia',
         toolMode: 'opencode',
         scope: 'selected',
-        modelIds: ['deepseek-ai/deepseek-v3.2', '', 'deepseek-ai/deepseek-v3.2'],
+        modelIds: ['deepseek-ai/deepseek-v4-flash', '', 'deepseek-ai/deepseek-v4-flash'],
         lastSyncedAt: '2026-03-09T12:00:00.000Z',
       },
       null,
@@ -3180,7 +3187,7 @@ describe('endpoint install tracking', () => {
         providerKey: 'nvidia',
         toolMode: 'opencode',
         scope: 'selected',
-        modelIds: ['deepseek-ai/deepseek-v3.2'],
+        modelIds: ['deepseek-ai/deepseek-v4-flash'],
         lastSyncedAt: '2026-03-09T12:00:00.000Z',
       },
     ])
@@ -3227,7 +3234,7 @@ describe('endpoint installer', () => {
       const expectedApiKey = getApiKey(config, 'nvidia')
       const result = installProviderEndpoints(config, 'nvidia', 'opencode-desktop', {
         scope: 'selected',
-        modelIds: ['deepseek-ai/deepseek-v3.2'],
+        modelIds: ['deepseek-ai/deepseek-v4-flash'],
         paths,
       })
 
@@ -3236,7 +3243,7 @@ describe('endpoint installer', () => {
       assert.equal(result.modelCount, 1)
       assert.equal(written.provider['fcm-nvidia'].options.apiKey, expectedApiKey)
       assert.deepEqual(written.provider['fcm-nvidia'].models, {
-        'deepseek-ai/deepseek-v3.2': { name: 'DeepSeek V3.2' },
+        'deepseek-ai/deepseek-v4-flash': { name: 'DeepSeek V4 Flash' },
       })
       assert.deepEqual(config.endpointInstalls.map((entry) => ({
         providerKey: entry.providerKey,
@@ -3248,7 +3255,7 @@ describe('endpoint installer', () => {
           providerKey: 'nvidia',
           toolMode: 'opencode',
           scope: 'selected',
-          modelIds: ['deepseek-ai/deepseek-v3.2'],
+          modelIds: ['deepseek-ai/deepseek-v4-flash'],
         },
       ])
     } finally {
@@ -3324,7 +3331,7 @@ describe('legacy proxy cleanup', () => {
         proxySettings: { enabled: true },
         endpointInstalls: [
           { providerKey: 'nvidia', toolMode: 'claude-code', scope: 'all', modelIds: [] },
-          { providerKey: 'nvidia', toolMode: 'opencode', scope: 'selected', modelIds: ['deepseek-ai/deepseek-v3.2'] },
+          { providerKey: 'nvidia', toolMode: 'opencode', scope: 'selected', modelIds: ['deepseek-ai/deepseek-v4-flash'] },
         ],
       }, null, 2))
 
@@ -3333,7 +3340,7 @@ describe('legacy proxy cleanup', () => {
           'fcm-proxy': { options: { apiKey: 'legacy' } },
           'fcm-nvidia': { options: { apiKey: 'nvapi-test' } },
         },
-        model: 'fcm-proxy/deepseek-ai/deepseek-v3.2',
+        model: 'fcm-proxy/deepseek-ai/deepseek-v4-flash',
       }, null, 2))
 
       const summary = cleanupLegacyProxyArtifacts({
@@ -3353,7 +3360,7 @@ describe('legacy proxy cleanup', () => {
       assert.equal('proxy' in nextConfig.settings, false)
       assert.equal(nextConfig.settings.preferredToolMode, 'opencode')
       assert.deepEqual(nextConfig.endpointInstalls, [
-        { providerKey: 'nvidia', toolMode: 'opencode', scope: 'selected', modelIds: ['deepseek-ai/deepseek-v3.2'] },
+        { providerKey: 'nvidia', toolMode: 'opencode', scope: 'selected', modelIds: ['deepseek-ai/deepseek-v4-flash'] },
       ])
       assert.equal(Boolean(nextOpencode.provider['fcm-proxy']), false)
       assert.equal(Boolean(nextOpencode.provider['fcm-nvidia']), true)
@@ -3414,17 +3421,17 @@ describe('legacy proxy cleanup', () => {
       ].join('\n'))
       writeFileSync(gooseConfigPath, [
         'GOOSE_PROVIDER: fcm-proxy',
-        'GOOSE_MODEL: fcm-proxy/deepseek-ai/deepseek-v3.2',
+        'GOOSE_MODEL: fcm-proxy/deepseek-ai/deepseek-v4-flash',
         'OTHER_SETTING: keep-me',
       ].join('\n'))
       writeFileSync(qwenConfigPath, JSON.stringify({
         modelProviders: {
           openai: [
-            { id: 'fcm-proxy/deepseek-ai/deepseek-v3.2', envKey: 'FCM_PROXY_API_KEY', baseUrl: 'http://127.0.0.1:18045/v1' },
-            { id: 'fcm-nvidia/deepseek-ai/deepseek-v3.2', envKey: 'FCM_NVIDIA_API_KEY', baseUrl: 'https://integrate.api.nvidia.com/v1' },
+            { id: 'fcm-proxy/deepseek-ai/deepseek-v4-flash', envKey: 'FCM_PROXY_API_KEY', baseUrl: 'http://127.0.0.1:18045/v1' },
+            { id: 'fcm-nvidia/deepseek-ai/deepseek-v4-flash', envKey: 'FCM_NVIDIA_API_KEY', baseUrl: 'https://integrate.api.nvidia.com/v1' },
           ],
         },
-        model: 'fcm-proxy/deepseek-ai/deepseek-v3.2',
+        model: 'fcm-proxy/deepseek-ai/deepseek-v4-flash',
       }, null, 2))
 
       cleanupLegacyProxyArtifacts({
@@ -3449,7 +3456,7 @@ describe('legacy proxy cleanup', () => {
       assert.doesNotMatch(nextGooseConfig, /GOOSE_PROVIDER:\s*fcm-proxy/)
       assert.match(nextGooseConfig, /OTHER_SETTING: keep-me/)
       assert.deepEqual(nextQwenConfig.modelProviders.openai, [
-        { id: 'fcm-nvidia/deepseek-ai/deepseek-v3.2', envKey: 'FCM_NVIDIA_API_KEY', baseUrl: 'https://integrate.api.nvidia.com/v1' },
+        { id: 'fcm-nvidia/deepseek-ai/deepseek-v4-flash', envKey: 'FCM_NVIDIA_API_KEY', baseUrl: 'https://integrate.api.nvidia.com/v1' },
       ])
       assert.equal('model' in nextQwenConfig, false)
     } finally {
@@ -3498,7 +3505,7 @@ describe('Dynamic OpenRouter MODELS mutation', () => {
       assert.equal(typeof entry[0], 'string', 'modelId should be string')
       assert.equal(typeof entry[1], 'string', 'label should be string')
       assert.ok(TIER_ORDER.includes(entry[2]), `tier ${entry[2]} should be valid`)
-      assert.match(entry[3], /^\d+\.\d+%$/, 'sweScore should match N.N% format')
+      assert.match(entry[3], /^(\d+\.\d+%|-)$/, 'sweScore should match N.N% format or unknown marker')
       assert.match(entry[4], /^\d+[kM]$/, 'ctx should match Nk or NM format')
       assert.equal(entry[5], 'openrouter', 'providerKey should be openrouter')
     }

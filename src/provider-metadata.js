@@ -45,22 +45,16 @@ export const ENV_VAR_NAMES = {
   cerebras:   'CEREBRAS_API_KEY',
   sambanova:  'SAMBANOVA_API_KEY',
   openrouter: 'OPENROUTER_API_KEY',
-  huggingface:'HUGGINGFACE_API_KEY',
-  replicate:  'REPLICATE_API_TOKEN',
-  deepinfra:  'DEEPINFRA_API_KEY',
-  fireworks:  'FIREWORKS_API_KEY',
-  codestral:  'CODESTRAL_API_KEY',
-  hyperbolic: 'HYPERBOLIC_API_KEY',
+  'github-models': 'GITHUB_TOKEN',
+  codestral:  'MISTRAL_API_KEY',
   scaleway:   'SCALEWAY_API_KEY',
   googleai:   'GOOGLE_API_KEY',
-  siliconflow:'SILICONFLOW_API_KEY',
-  together:   'TOGETHER_API_KEY',
   cloudflare: 'CLOUDFLARE_API_TOKEN',
-  perplexity: 'PERPLEXITY_API_KEY',
   zai:        'ZAI_API_KEY',
   gemini:     'GEMINI_API_KEY',
-  chutes:     'CHUTES_API_KEY',
   ovhcloud:   'OVH_AI_ENDPOINTS_ACCESS_TOKEN',
+  qwen:       'DASHSCOPE_API_KEY',
+  'opencode-zen': 'OPENCODE_ZEN_API_KEY',
 }
 
 // 📖 OPENCODE_MODEL_MAP: sparse table of model IDs that differ between sources.js and OpenCode's
@@ -103,7 +97,7 @@ export const PROVIDER_METADATA = {
     color: chalk.rgb(255, 224, 178),
     signupUrl: 'https://cloud.sambanova.ai/apis',
     signupHint: 'SambaCloud portal → Create API key',
-    rateLimits: 'Dev tier generous quota',
+    rateLimits: 'Small developer quota; useful for light coding and smoke tests',
   },
   openrouter: {
     label: 'OpenRouter',
@@ -112,6 +106,13 @@ export const PROVIDER_METADATA = {
     signupHint: 'API Keys → Create',
     rateLimits: 'Free on :free: 50/day <$10, 1000/day ≥$10 (20 req/min)',
     detailedLimits: 'No credits (or <$10) → 50 requests/day (20 req/min)\n≥ $10 in credits → 1000 requests/day (20 req/min)\n• Free models (:free) never consume credits\n• Failed requests count toward quota\n• Quota resets daily at midnight UTC\n• Free-tier models may be rate-limited during peak hours',
+  },
+  'github-models': {
+    label: 'GitHub Models',
+    color: chalk.rgb(183, 201, 255),
+    signupUrl: 'https://models.github.ai',
+    signupHint: 'Use a GitHub token with Models access (GITHUB_TOKEN works in GitHub contexts)',
+    rateLimits: 'Quota depends on GitHub/Copilot tier; no separate provider billing',
   },
   huggingface: {
     label: 'Hugging Face Inference',
@@ -146,9 +147,9 @@ export const PROVIDER_METADATA = {
   codestral: {
     label: 'Mistral Codestral',
     color: chalk.rgb(248, 187, 208),
-    signupUrl: 'https://codestral.mistral.ai',
-    signupHint: 'API Keys → Create',
-    rateLimits: '30 req/min, 2000/day',
+    signupUrl: 'https://console.mistral.ai/api-keys',
+    signupHint: 'La Plateforme → API keys (MISTRAL_API_KEY; CODESTRAL_API_KEY also works)',
+    rateLimits: 'Codestral free access: 30 req/min, 2000/day',
   },
   hyperbolic: {
     label: 'Hyperbolic',
@@ -169,7 +170,7 @@ export const PROVIDER_METADATA = {
     color: chalk.rgb(187, 222, 251),
     signupUrl: 'https://aistudio.google.com/apikey',
     signupHint: 'Get API key',
-    rateLimits: '14.4K req/day, 30/min',
+    rateLimits: 'Gemini free quotas vary by model and region',
   },
   siliconflow: {
     label: 'SiliconFlow',
@@ -211,7 +212,7 @@ export const PROVIDER_METADATA = {
     color: chalk.rgb(174, 213, 255),
     signupUrl: 'https://z.ai',
     signupHint: 'Sign up and generate an API key',
-    rateLimits: 'Free tier (generous quota)',
+    rateLimits: 'Free tier: Flash models only in this catalog',
   },
   iflow: {
     label: 'iFlow',
@@ -240,7 +241,7 @@ export const PROVIDER_METADATA = {
     color: chalk.rgb(66, 165, 245), // blue
     signupUrl: 'https://github.com/google-gemini/gemini-cli',
     signupHint: 'Install: npm install -g @google/gemini-cli',
-    rateLimits: 'Free tier: 1,000 req/day (personal Google account, no credit card)',
+    rateLimits: 'Free tier: 1,000 req/day with personal Google account',
     cliOnly: true,
   },
   'opencode-zen': {

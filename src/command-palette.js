@@ -16,6 +16,18 @@
  */
 
 import { TOOL_METADATA, TOOL_MODE_ORDER } from './tool-metadata.js'
+import { sources } from '../sources.js'
+
+const PROVIDER_FILTER_COMMANDS = Object.entries(sources).map(([providerKey, source]) => {
+  const label = source?.name || providerKey
+  return {
+    id: `filter-provider-${providerKey.replace(/[^a-z0-9]+/gi, '-')}`,
+    label,
+    providerKey,
+    description: `${label} models`,
+    keywords: ['filter', 'provider', 'origin', providerKey, label.toLowerCase()],
+  }
+})
 
 const TOOL_MODE_DESCRIPTIONS = {
   opencode: 'Launch in OpenCode CLI with the selected model.',
@@ -119,17 +131,7 @@ const BASE_COMMAND_TREE = [
         children: [
           { id: 'filter-provider-cycle', label: 'Cycle provider', shortcut: 'D', description: 'Switch between providers', keywords: ['filter', 'provider', 'origin'] },
           { id: 'filter-provider-all', label: 'All providers', providerKey: null, description: 'Show all providers', keywords: ['filter', 'provider', 'all'] },
-          { id: 'filter-provider-nvidia', label: 'NVIDIA NIM', providerKey: 'nvidiaNim', description: 'NVIDIA models', keywords: ['filter', 'provider', 'nvidia', 'nim'] },
-          { id: 'filter-provider-groq', label: 'Groq', providerKey: 'groq', description: 'Groq models', keywords: ['filter', 'provider', 'groq'] },
-          { id: 'filter-provider-cerebras', label: 'Cerebras', providerKey: 'cerebras', description: 'Cerebras models', keywords: ['filter', 'provider', 'cerebras'] },
-          { id: 'filter-provider-sambanova', label: 'SambaNova', providerKey: 'sambanova', description: 'SambaNova models', keywords: ['filter', 'provider', 'sambanova'] },
-          { id: 'filter-provider-openrouter', label: 'OpenRouter', providerKey: 'openrouter', description: 'OpenRouter models', keywords: ['filter', 'provider', 'openrouter'] },
-          { id: 'filter-provider-together', label: 'Together AI', providerKey: 'together', description: 'Together models', keywords: ['filter', 'provider', 'together'] },
-          { id: 'filter-provider-deepinfra', label: 'DeepInfra', providerKey: 'deepinfra', description: 'DeepInfra models', keywords: ['filter', 'provider', 'deepinfra'] },
-          { id: 'filter-provider-fireworks', label: 'Fireworks AI', providerKey: 'fireworks', description: 'Fireworks models', keywords: ['filter', 'provider', 'fireworks'] },
-          { id: 'filter-provider-hyperbolic', label: 'Hyperbolic', providerKey: 'hyperbolic', description: 'Hyperbolic models', keywords: ['filter', 'provider', 'hyperbolic'] },
-          { id: 'filter-provider-google', label: 'Google AI', providerKey: 'google', description: 'Google models', keywords: ['filter', 'provider', 'google'] },
-          { id: 'filter-provider-huggingface', label: 'Hugging Face', providerKey: 'huggingface', description: 'Hugging Face models', keywords: ['filter', 'provider', 'huggingface'] },
+          ...PROVIDER_FILTER_COMMANDS,
         ]
       },
       {
@@ -209,7 +211,6 @@ const BASE_COMMAND_TREE = [
   { id: 'open-feedback', label: 'Feedback', shortcut: 'I', icon: '📝', type: 'page', description: 'Report bugs or requests', keywords: ['feedback', 'bug', 'request'] },
   { id: 'open-recommend', label: 'Smart recommend', shortcut: 'Q', icon: '🎯', type: 'page', description: 'Find best model for task', keywords: ['recommend', 'best model'] },
   { id: 'open-router-dashboard', label: 'Router dashboard', shortcut: 'Shift+R', icon: '🔀', type: 'page', description: 'Inspect daemon health, circuits, tokens, and request log', keywords: ['router', 'daemon', 'dashboard', 'health', 'stats', 'tokens', 'circuit'] },
-  { id: 'open-router-sets', label: 'Router sets', shortcut: 'Shift+S', icon: '📋', type: 'page', description: 'Manage router model sets — create, reorder, activate', keywords: ['router', 'sets', 'model', 'manager'] },
   { id: 'open-token-usage', label: 'Token usage', shortcut: 'Shift+T', icon: '📊', type: 'page', description: 'View token usage history, 7-day chart, today/all-time totals', keywords: ['token', 'usage', 'chart', 'history', 'router'] },
   { id: 'open-install-endpoints', label: 'Install endpoints', icon: '🔌', type: 'page', description: 'Install provider catalogs', keywords: ['install', 'endpoints', 'providers'] },
   { id: 'open-installed-models', label: 'Installed models', icon: '🗂️', type: 'page', description: 'View models configured in tools', keywords: ['installed', 'models', 'configured', 'tools', 'manager', 'goose', 'crush', 'aider'] },

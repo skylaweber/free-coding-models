@@ -57,3 +57,10 @@ task/artifacts/*
 task/reports/*.md
 !task/reports/.gitkeep
 .aider*
+
+# 13. Crush CLI (local tooling)
+.crush/
+
+# 14. Demo assets (large media)
+# demo*.gif
+# demo*.mp4

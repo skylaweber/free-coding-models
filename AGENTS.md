@@ -243,3 +243,14 @@ When user requests `/bump`, `"push commit"`, or `"bump a new version now"`, exec
 - Only confirm release when global npm-installed version functions correctly
 
 **Critical:** Never skip versions — consolidate all changes into the next sequential version number.
+
+
+<!-- kandown:agent-ref -->
+## Task management
+
+**IMPORTANT:** Before touching any task files, you MUST read `.kandown/AGENT_KANDOWN.md`.
+
+This project uses a file-based kanban:
+- **Tasks live in `.kandown/tasks/t-xxx.md`** — each task file owns its status
+- **Columns live in `.kandown/kandown.json`** under `board.columns`
+- **Completion workflow:** set task frontmatter `status: Done` + write the completion report

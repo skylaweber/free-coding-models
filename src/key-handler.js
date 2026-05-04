@@ -53,22 +53,14 @@ import {
   openRouterDashboardOverlay,
   restartRouterDashboardDaemon,
   toggleRouterDashboardProbePause,
-  fetchRouterSets,
-  createRouterSet,
-  renameRouterSet,
-  duplicateRouterSet,
-  deleteRouterSet,
-  activateRouterSet,
-  reorderRouterSetModel,
-  closeRouterSetsManagerOverlay,
-  addModelToRouterSet,
 } from './router-dashboard.js'
 
 // 📖 Some providers need an explicit probe model because the first catalog entry
 // 📖 is not guaranteed to be accepted by their chat endpoint.
 const PROVIDER_TEST_MODEL_OVERRIDES = {
-  sambanova: ['DeepSeek-V3-0324'],
-  nvidia: ['deepseek-ai/deepseek-v3.1-terminus', 'openai/gpt-oss-120b'],
+  sambanova: ['MiniMax-M2.5', 'DeepSeek-V3.1'],
+  nvidia: ['deepseek-ai/deepseek-v4-flash', 'openai/gpt-oss-120b'],
+  'github-models': ['openai/gpt-4.1-mini'],
 }
 
 // 📖 Settings key tests retry retryable failures across several models so a
@@ -100,6 +92,7 @@ const PROVIDER_AUTH_ENDPOINTS = {
   ovhcloud:     { url: 'https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/models', method: 'GET' },
   qwen:         { url: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/models', method: 'GET' },
   iflow:        { url: 'https://apis.iflow.cn/v1/models',            method: 'GET' },
+  'github-models': null, // 📖 GitHub Models catalog is public; use chat ping to validate the token.
   replicate:    null, // 📖 Replicate has no /models endpoint; use chat completions ping
   cloudflare:   null, // 📖 Workers AI has no auth-check endpoint; use ping only
   zai:          null, // 📖 ZAI undocumented; use ping only
@@ -384,6 +377,40 @@ export function createKeyHandler(ctx) {
     })
   }
 
+  async function syncFavoritesToRouter(selected) {
+    if (state.config?.router?.enabled !== true) return
+    const favorites = state.config.favorites || []
+    const selKey = toFavoriteKey(selected.providerKey, selected.modelId)
+    const chain = [selKey, ...favorites.filter((f) => f !== selKey)]
+    const models = chain.map((f, i) => {
+      const slashIdx = f.indexOf('/')
+      const provider = slashIdx >= 0 ? f.slice(0, slashIdx) : '?'
+      const model = slashIdx >= 0 ? f.slice(slashIdx + 1) : f
+      return { provider, model, priority: i + 1 }
+    })
+    try {
+      const port = await readDaemonPort()
+      if (!port) return
+      const baseUrl = `http://127.0.0.1:${port}`
+      const setPayload = { name: 'fast-coding', models, created: new Date().toISOString() }
+      await globalThis.fetch(`${baseUrl}/sets/fast-coding`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(setPayload),
+      })
+      await globalThis.fetch(`${baseUrl}/sets/fast-coding/activate`, { method: 'POST' })
+    } catch {}
+  }
+
+  async function readDaemonPort() {
+    try {
+      const { readFileSync } = await import('node:fs')
+      const raw = readFileSync(`${process.env.HOME}/.free-coding-models-daemon.port`, 'utf8').trim()
+      if (/^\d+$/.test(raw)) return Number(raw)
+    } catch {}
+    return null
+  }
+
   async function launchSelectedModel(selected, options = {}) {
     const { uiAlreadyStopped = false } = options
     userSelected = { modelId: selected.modelId, label: selected.label, tier: selected.tier, providerKey: selected.providerKey }
@@ -394,7 +421,9 @@ export function createKeyHandler(ctx) {
       stopUi()
     }
 
-    // 📖 Show selection status before handing control to the target tool.
+    // 📖 If router is enabled, push [selected, ...favorites] to daemon as the active set
+    await syncFavoritesToRouter(selected)
+
     if (selected.status === 'timeout') {
       console.log(chalk.yellow(`  ⚠ Selected: ${selected.label} (currently timing out)`))
     } else if (selected.status === 'down') {
@@ -949,46 +978,6 @@ export function createKeyHandler(ctx) {
     }
   }
 
-  function openRouterSetsManagerOverlay() {
-    state.setsOpen = true
-    state.setsCursor = 0
-    state.setsScrollOffset = 0
-    state.setsActivePane = 'sets'
-    state.setsEditMode = null
-    state.setsEditBuffer = ''
-    state.setsError = null
-    state.setsLastFetchAt = 0
-    // 📖 Initialize setsData defensively so the overlay never renders against undefined
-    if (!state.setsData) state.setsData = { sets: {}, activeSet: null }
-    void fetchRouterSets(state, { fetchFn: globalThis.fetch }).catch(() => {
-      state.setsError = 'Failed to connect to router daemon'
-    })
-  }
-
-  function openRouterAddModelOverlay() {
-    const selected = state.visibleSorted?.[state.cursor]
-    if (!selected) return
-    state.setsAddSelectedModel = {
-      provider: selected.providerKey,
-      model: selected.modelId,
-      label: selected.label,
-    }
-    state.setsAddPositionPickerOpen = true
-    state.setsAddPositionCursor = -1 // -1 = append at end
-    state.setsAddModelSearch = ''
-    state.setsOpen = true
-    state.setsCursor = 0
-    state.setsScrollOffset = 0
-    state.setsActivePane = 'sets'
-    state.setsEditMode = 'add-position-picker'
-    state.setsEditBuffer = ''
-    state.setsError = null
-    // 📖 Initialize setsData defensively before fetching
-    if (!state.setsData) state.setsData = { sets: {}, activeSet: null }
-    void fetchRouterSets(state, { fetchFn: globalThis.fetch }).catch(() => {
-      state.setsError = 'Failed to connect to router daemon'
-    })
-  }
 
   // 📖 Token Usage screen — Shift+T from main table. Fetches daily token history
   // 📖 from the daemon and renders a 7-day chart plus today/all-time breakdowns.
@@ -1033,66 +1022,6 @@ export function createKeyHandler(ctx) {
     state.tokenUsageError = null
   }
 
-  // 📖 Handles all Set Manager edit mode confirmations (create/rename/duplicate/delete/activate/add-model).
-  // 📖 Wrapped in a top-level try/catch so unexpected fetch/network errors never crash the TUI.
-  async function handleSetsEditConfirm(localState, selectedSetName, allSetNames, models) {
-    const mode = localState.setsEditMode
-    const buffer = (localState.setsEditBuffer || '').trim()
-    localState.setsEditMode = null
-    localState.setsEditBuffer = ''
-    const fetchFn = globalThis.fetch
-
-    try {
-      if (mode === 'create') {
-        if (!buffer) { localState.setsError = 'Set name cannot be empty'; return }
-        const result = await createRouterSet(localState, buffer, { fetchFn })
-        if (!result.ok) localState.setsError = result.error || 'Failed to create set'
-        return
-      }
-      if (mode === 'rename') {
-        if (!buffer || !selectedSetName) { localState.setsError = 'Invalid rename'; return }
-        if (allSetNames.includes(buffer) && buffer !== selectedSetName) { localState.setsError = 'A set with that name already exists'; return }
-        const result = await renameRouterSet(localState, selectedSetName, buffer, { fetchFn })
-        if (!result.ok) localState.setsError = result.error || 'Failed to rename set'
-        return
-      }
-      if (mode === 'duplicate') {
-        if (!buffer || !selectedSetName) { localState.setsError = 'Invalid duplicate'; return }
-        if (allSetNames.includes(buffer)) { localState.setsError = 'A set with that name already exists'; return }
-        const result = await duplicateRouterSet(localState, selectedSetName, buffer, { fetchFn })
-        if (!result.ok) localState.setsError = result.error || 'Failed to duplicate set'
-        return
-      }
-      if (mode === 'delete-confirm') {
-        if (!selectedSetName) return
-        const result = await deleteRouterSet(localState, selectedSetName, { fetchFn })
-        if (!result.ok) { localState.setsError = result.error || 'Failed to delete set'; return }
-        localState.setsCursor = Math.max(0, localState.setsCursor - 1)
-        return
-      }
-      if (mode === 'activate-confirm') {
-        if (!selectedSetName) return
-        const result = await activateRouterSet(localState, selectedSetName, { fetchFn })
-        if (!result.ok) { localState.setsError = result.error || 'Failed to activate set'; return }
-        return
-      }
-      if (mode === 'add-position-picker') {
-        const candidate = localState.setsAddSelectedModel
-        if (!candidate || !selectedSetName) { localState.setsError = 'No model or set selected'; return }
-        const priority = localState.setsAddPositionCursor >= 0
-          ? localState.setsAddPositionCursor + 1
-          : (models.length || 0) + 1
-        const result = await addModelToRouterSet(localState, selectedSetName, candidate.provider, candidate.model, priority, { fetchFn })
-        if (!result.ok) { localState.setsError = result.error || 'Failed to add model'; return }
-        localState.setsAddPositionPickerOpen = false
-        localState.setsAddSelectedModel = null
-        localState.setsEditMode = null
-        return
-      }
-    } catch (err) {
-      localState.setsError = err?.message || 'An unexpected error occurred'
-    }
-  }
 
   function cycleToolMode() {
     const modeOrder = getToolModeOrder()
@@ -1375,7 +1304,6 @@ export function createKeyHandler(ctx) {
       case 'open-feedback': return openFeedbackOverlay()
       case 'open-recommend': return openRecommendOverlay()
       case 'open-router-dashboard': return openRouterDashboardOverlay(state)
-      case 'open-router-sets': return openRouterSetsManagerOverlay()
       case 'open-token-usage': return openTokenUsageOverlay()
       case 'open-install-endpoints': return openInstallEndpointsOverlay()
       case 'open-installed-models': return openInstalledModelsOverlay()
@@ -1560,192 +1488,6 @@ export function createKeyHandler(ctx) {
         toggleRouterDashboardProbePause(state)
         return
       }
-      return
-    }
-
-    // 📖 Router Set Manager overlay: N=new set, D=duplicate, R=rename, Delete=delete,
-    // 📖 Tab=switch pane, Enter=confirm, Shift+Up/Down=reorder, A=activate, Esc=cancel/close.
-    if (state.setsOpen) {
-      if (key.ctrl && key.name === 'c') { exit(0); return }
-
-      const setsData = state.setsData
-      const sets = setsData?.sets || {}
-      const setNames = Object.keys(sets).sort()
-      const selectedSetName = state.setsCursor < setNames.length ? setNames[state.setsCursor] : null
-      const models = selectedSetName ? (sets[selectedSetName]?.models || []) : []
-      const leftPaneMax = state.setsEditMode === 'create' ? 0 : Math.max(0, setNames.length - 1)
-      const rightPaneMax = Math.max(0, models.length - 1)
-
-      // ── Edit mode: text input (create/rename/duplicate) ───────────────────
-      if (state.setsEditMode && state.setsEditMode !== 'add-position-picker') {
-        if (key.name === 'escape') {
-          state.setsEditMode = null
-          state.setsEditBuffer = ''
-          return
-        }
-        if (key.name === 'return') {
-          await handleSetsEditConfirm(state, selectedSetName, setNames, models)
-          return
-        }
-        if (key.name === 'backspace') {
-          state.setsEditBuffer = state.setsEditBuffer.slice(0, -1)
-          return
-        }
-        if (key.ctrl || key.meta) return
-        const char = key.ctrl ? '' : (str || '').slice(-1)
-        if (char && char.length === 1 && !key.ctrl && !key.meta) {
-          state.setsEditBuffer += char
-        }
-        return
-      }
-
-      // ── Add-position-picker mode: choose insertion point then confirm ──────
-      if (state.setsEditMode === 'add-position-picker') {
-        if (key.name === 'escape') {
-          state.setsEditMode = null
-          state.setsAddPositionPickerOpen = false
-          state.setsAddSelectedModel = null
-          state.setsAddPositionCursor = -1
-          state.setsAddModelSearch = ''
-          return
-        }
-        if (key.name === 'return') {
-          await handleSetsEditConfirm(state, selectedSetName, setNames, models)
-          return
-        }
-        if (key.name === 'up' || key.name === 'k') {
-          state.setsAddPositionCursor = Math.max(-1, state.setsAddPositionCursor - 1)
-          return
-        }
-        if (key.name === 'down' || key.name === 'j') {
-          state.setsAddPositionCursor = Math.min(models.length - 1, state.setsAddPositionCursor + 1)
-          return
-        }
-        return
-      }
-
-      // ── Escape: close overlay ──────────────────────────────────────────────
-      if (key.name === 'escape') {
-        closeRouterSetsManagerOverlay(state)
-        return
-      }
-
-      // ── Tab: switch focus between left (sets) and right (models) panes ────
-      if (key.name === 'tab') {
-        state.setsActivePane = state.setsActivePane === 'sets' ? 'models' : 'sets'
-        // 📖 Clamp cursor to the new pane's bounds to prevent out-of-range access
-        const newMax = state.setsActivePane === 'sets' ? leftPaneMax : rightPaneMax
-        state.setsCursor = Math.min(state.setsCursor, Math.max(0, newMax))
-        return
-      }
-
-      // ── Navigation: up/down within active pane ─────────────────────────────
-      const maxCursor = state.setsActivePane === 'sets' ? leftPaneMax : rightPaneMax
-      if (key.name === 'up' || key.name === 'k') {
-        state.setsCursor = Math.max(0, state.setsCursor - 1)
-        return
-      }
-      if (key.name === 'down' || key.name === 'j') {
-        state.setsCursor = Math.min(maxCursor, state.setsCursor + 1)
-        return
-      }
-      if (key.name === 'pageup') {
-        state.setsCursor = Math.max(0, state.setsCursor - Math.max(1, (state.terminalRows || 10) - 4))
-        return
-      }
-      if (key.name === 'pagedown') {
-        state.setsCursor = Math.min(maxCursor, state.setsCursor + Math.max(1, (state.terminalRows || 10) - 4))
-        return
-      }
-      if (key.name === 'home') {
-        state.setsCursor = 0
-        return
-      }
-      if (key.name === 'end') {
-        state.setsCursor = maxCursor
-        return
-      }
-
-      // ── N: create new set ─────────────────────────────────────────────────
-      if (key.name === 'n') {
-        state.setsEditMode = 'create'
-        state.setsEditBuffer = ''
-        state.setsActivePane = 'sets'
-        state.setsCursor = 0
-        return
-      }
-
-      // ── D: duplicate selected set ─────────────────────────────────────────
-      if (key.name === 'd') {
-        if (!selectedSetName) return
-        state.setsEditMode = 'duplicate'
-        state.setsEditBuffer = `${selectedSetName}-copy`
-        state.setsActivePane = 'sets'
-        return
-      }
-
-      // ── R: rename selected set ─────────────────────────────────────────────
-      if (key.name === 'r') {
-        if (!selectedSetName) return
-        state.setsEditMode = 'rename'
-        state.setsEditBuffer = selectedSetName
-        state.setsActivePane = 'sets'
-        return
-      }
-
-      // ── Delete / Backspace: delete selected set or remove model ───────────
-      if (key.name === 'delete' || key.name === 'backspace') {
-        if (state.setsActivePane === 'sets') {
-          if (!selectedSetName) return
-          state.setsEditMode = 'delete-confirm'
-          state.setsActivePane = 'sets'
-          return
-        } else {
-          // Remove model from set
-          const m = models[state.setsCursor]
-          if (!m || !selectedSetName) return
-          try {
-            const result = await removeModelFromRouterSet(state, selectedSetName, m.provider, m.model)
-            if (!result.ok) state.setsError = result.error || 'Failed to remove model'
-          } catch (err) {
-            state.setsError = err?.message || 'Failed to remove model'
-          }
-          return
-        }
-      }
-
-      // ── A: activate selected set ──────────────────────────────────────────
-      if (key.name === 'a') {
-        if (!selectedSetName) return
-        state.setsEditMode = 'activate-confirm'
-        state.setsActivePane = 'sets'
-        return
-      }
-
-      // ── Shift+Up / Shift+Down: reorder model priority ─────────────────────
-      if (key.shift && (key.name === 'up' || key.name === 'arrowup')) {
-        const m = models[state.setsCursor]
-        if (!m || !selectedSetName) return
-        try {
-          const result = await reorderRouterSetModel(state, selectedSetName, m.provider, m.model, 'up')
-          if (!result.ok) state.setsError = result.error || 'Failed to reorder'
-        } catch (err) {
-          state.setsError = err?.message || 'Failed to reorder'
-        }
-        return
-      }
-      if (key.shift && (key.name === 'down' || key.name === 'arrowdown')) {
-        const m = models[state.setsCursor]
-        if (!m || !selectedSetName) return
-        try {
-          const result = await reorderRouterSetModel(state, selectedSetName, m.provider, m.model, 'down')
-          if (!result.ok) state.setsError = result.error || 'Failed to reorder'
-        } catch (err) {
-          state.setsError = err?.message || 'Failed to reorder'
-        }
-        return
-      }
-
       return
     }
 
@@ -2891,18 +2633,6 @@ export function createKeyHandler(ctx) {
       return
     }
 
-    // 📖 Shift+S: open the Router Set Manager overlay.
-    if (key.name === 's' && key.shift && !key.ctrl && !key.meta) {
-      openRouterSetsManagerOverlay()
-      return
-    }
-
-    // 📖 Shift+A: add the selected model from the main table to a router set.
-    if (key.name === 'a' && key.shift && !key.ctrl && !key.meta) {
-      openRouterAddModelOverlay()
-      return
-    }
-
     // 📖 Shift+T: open the Token Usage screen.
     if (key.name === 't' && key.shift && !key.ctrl && !key.meta) {
       openTokenUsageOverlay()
@@ -3039,6 +2769,28 @@ export function createKeyHandler(ctx) {
       return
     }
 
+    if (key.shift && key.name === 'up') {
+      const selected = state.visibleSorted?.[state.cursor]
+      if (selected?.isFavorite) {
+        reorderFavorite(state.config, selected.providerKey, selected.modelId, 'up')
+        syncFavoriteFlags(state.results, state.config)
+        applyTierFilter()
+        refreshVisibleSorted({ resetCursor: false })
+      }
+      return
+    }
+
+    if (key.shift && key.name === 'down') {
+      const selected = state.visibleSorted?.[state.cursor]
+      if (selected?.isFavorite) {
+        reorderFavorite(state.config, selected.providerKey, selected.modelId, 'down')
+        syncFavoriteFlags(state.results, state.config)
+        applyTierFilter()
+        refreshVisibleSorted({ resetCursor: false })
+      }
+      return
+    }
+
     if (key.name === 'up' || key.name === 'k') {
       // 📖 Main list wrap navigation: top -> bottom on Up / K (vim-style).
       const count = state.visibleSorted.length
@@ -3064,12 +2816,9 @@ export function createKeyHandler(ctx) {
     }
 
     if (key.name === 'return') { // Enter
-      // 📖 Use the cached visible+sorted array — guaranteed to match what's on screen
       const selected = state.visibleSorted[state.cursor]
-      if (!selected) return // 📖 Guard: empty visible list (all filtered out)
+      if (!selected) return
 
-      // 📖 Incompatibility intercept — if the model can't run on the active tool,
-      // 📖 show the fallback overlay instead of launching. Lets user switch tool or pick similar model.
       if (!isModelCompatibleWithTool(selected.providerKey, state.mode)) {
         const compatTools = getCompatibleTools(selected.providerKey)
         const similarModels = findSimilarCompatibleModels(
