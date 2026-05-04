@@ -826,6 +826,15 @@ export function renderRouterDashboard(state, deps = {}) {
   if (snapshot.models.length === 0) {
     lines.push(`  ${themeColors.dim('No model health rows available yet. Start the daemon or wait for /stats to answer.')}`)
   } else {
+    // 📖 Keycap emoji digits 1️⃣…🔟 — large, colorful, instantly readable in the
+    // 📖 router order column. Capped at 10 because the active set should never
+    // 📖 contain more than 10 priority slots in practice.
+    const KEYCAPS = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟']
+    const priorityGlyph = (priority) => {
+      const n = Number(priority)
+      if (Number.isFinite(n) && n >= 1 && n <= KEYCAPS.length) return KEYCAPS[n - 1]
+      return '—'
+    }
     const header = `  ${padEndDisplay('#', 4)} ${padEndDisplay('Provider', 12)} ${padEndDisplay('Model', 30)} ${padEndDisplay('State', 12)} ${padEndDisplay('P95', 8)} ${padEndDisplay('Up', 5)} Score`
     lines.push(themeColors.dim(header))
     for (const model of snapshot.models.slice(0, 12)) {
@@ -833,7 +842,7 @@ export function renderRouterDashboard(state, deps = {}) {
       const score = Number.isFinite(model.score) ? model.score.toFixed(2) : '—'
       const errorSuffix = model.last_error ? themeColors.dim(`  ${compactText(model.last_error, 22).trimEnd()}`) : ''
       lines.push(
-        `  ${padEndDisplay(String(model.priority), 4)} ` +
+        `  ${padEndDisplay(priorityGlyph(model.priority), 4)} ` +
         `${compactText(model.provider, 12)} ` +
         `${compactText(model.model, 30)} ` +
         `${padEndDisplay(modelStateBadge(model.state), 12)} ` +

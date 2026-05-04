@@ -65,13 +65,32 @@ export function maskApiKey(key) {
 
 // 📖 displayWidth: Calculate display width of a string in terminal columns.
 // 📖 Emojis and other wide characters occupy 2 columns, variation selectors (U+FE0F) are zero-width.
+// 📖 Keycap sequences (digit/# + FE0F + 20E3, e.g. 1️⃣) render as a single 2-cell glyph.
 // 📖 This avoids pulling in a full `string-width` dependency for a lightweight CLI tool.
 export function displayWidth(str) {
   const plain = stripAnsi(String(str))
+  const codepoints = [...plain]
   let w = 0
-  for (const ch of plain) {
+  for (let i = 0; i < codepoints.length; i++) {
+    const ch = codepoints[i]
     const cp = ch.codePointAt(0)
-    // Zero-width: variation selectors (FE00-FE0F), zero-width joiner/non-joiner, combining marks
+
+    // Keycap sequence detection: ASCII digit / # / * followed by optional FE0F then 20E3 → +2 (single emoji glyph)
+    const isKeycapBase = (cp >= 0x30 && cp <= 0x39) || cp === 0x23 || cp === 0x2A
+    if (isKeycapBase) {
+      let j = i + 1
+      let sawFe0f = false
+      if (j < codepoints.length && codepoints[j].codePointAt(0) === 0xFE0F) { sawFe0f = true; j++ }
+      if (j < codepoints.length && codepoints[j].codePointAt(0) === 0x20E3) {
+        w += 2
+        i = j // 📖 skip the consumed FE0F (if any) and the 20E3
+        continue
+      }
+      // 📖 Not a keycap, fall through to normal handling
+      void sawFe0f
+    }
+
+    // Zero-width: variation selectors (FE00-FE0F), zero-width joiner/non-joiner, lone combining keycap
     if ((cp >= 0xFE00 && cp <= 0xFE0F) || cp === 0x200D || cp === 0x200C || cp === 0x20E3) continue
     // Wide: CJK, emoji (most above U+1F000), fullwidth forms
     if (

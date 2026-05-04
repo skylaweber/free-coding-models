@@ -110,7 +110,7 @@ import { TIER_COLOR } from '../src/tier-colors.js'
 import { resolveCloudflareUrl, buildPingRequest, ping, extractQuotaPercent, getProviderQuotaPercentCached, usagePlaceholderForProvider } from '../src/ping.js'
 import { runFiableMode, filterByTierOrExit, fetchOpenRouterFreeModels } from '../src/analysis.js'
 import { PROVIDER_METADATA, ENV_VAR_NAMES, isWindows, isMac } from '../src/provider-metadata.js'
-import { parseTelemetryEnv, isTelemetryDebugEnabled, telemetryDebug, ensureTelemetryConfig, getTelemetryDistinctId, getTelemetrySystem, getTelemetryTerminal, isTelemetryEnabled, sendUsageTelemetry, sendBugReport } from '../src/telemetry.js'
+import { parseTelemetryEnv, isTelemetryDebugEnabled, telemetryDebug, ensureTelemetryConfig, getTelemetryDistinctId, getTelemetrySystem, getTelemetryTerminal, isTelemetryEnabled, sendUsageTelemetry } from '../src/telemetry.js'
 import { ensureFavoritesConfig, toFavoriteKey, syncFavoriteFlags, toggleFavoriteModel, reorderFavorite } from '../src/favorites.js'
 import { checkForUpdateDetailed, checkForUpdate, runUpdate, promptUpdateNotification, fetchLastReleaseDate } from './updater.js'
 import { promptApiKey } from '../src/setup.js'
@@ -508,11 +508,7 @@ export async function runApp(cliArgs, config) {
     recommendAnalysisTimer: null, // 📖 setInterval handle for the 10s analysis phase
     recommendPingTimer: null,     // 📖 setInterval handle for 2 pings/sec during analysis
     recommendedKeys: new Set(),   // 📖 Set of "providerKey/modelId" for recommended models (shown in main table)
-    // 📖 Feedback state (J/I keys open it)
-    feedbackOpen: false,          // 📖 Whether the feedback overlay is active
-    bugReportBuffer: '',          // 📖 Typed characters for the feedback message
-    bugReportStatus: 'idle',      // 📖 'idle'|'sending'|'success'|'error' — webhook send status
-    bugReportError: null,         // 📖 Last webhook error message
+
     // 📖 OpenCode sync status (S key in settings)
     settingsSyncStatus: null,     // 📖 { type: 'success'|'error', msg: string } — shown in settings footer
     // 📖 Changelog overlay state (N key opens it)
@@ -920,7 +916,6 @@ export async function runApp(cliArgs, config) {
     sendUsageTelemetry,
     startRecommendAnalysis: overlays.startRecommendAnalysis,
     stopRecommendAnalysis: overlays.stopRecommendAnalysis,
-    sendBugReport,
     stopUi,
     ping,
     TASK_TYPES,
@@ -1024,7 +1019,7 @@ export async function runApp(cliArgs, config) {
       process.stdout.write(ALT_LEAVE);
       console.error(chalk.red('\n[TUI Error] An error occurred while handling a keypress.'));
       console.error(err);
-      console.error(chalk.yellow('\nPlease file an issue at https://github.com/vava-nessa/free-coding-models/issues or use the feedback form (I key) to report this to the author.'));
+      console.error(chalk.yellow('\nPlease file an issue at https://github.com/vava-nessa/free-coding-models/issues or join the Discord to report this to the author.'));
       process.exit(1);
     }
   })
@@ -1048,7 +1043,7 @@ export async function runApp(cliArgs, config) {
     refreshAutoPingMode()
     state.frame++
     // 📖 Cache visible+sorted models each frame so Enter handler always matches the display
-    if (!state.settingsOpen && !state.installEndpointsOpen && !state.toolInstallPromptOpen && !state.incompatibleFallbackOpen && !state.recommendOpen && !state.feedbackOpen && !state.changelogOpen && !state.installedModelsOpen && !state.routerDashboardOpen && !state.commandPaletteOpen) {
+    if (!state.settingsOpen && !state.installEndpointsOpen && !state.toolInstallPromptOpen && !state.incompatibleFallbackOpen && !state.recommendOpen && !state.changelogOpen && !state.installedModelsOpen && !state.routerDashboardOpen && !state.commandPaletteOpen) {
       const visible = state.results.filter(r => !r.hidden)
       state.visibleSorted = sortResultsWithPinnedFavorites(visible, state.sortColumn, state.sortDirection, {
         pinFavorites: state.favoritesPinnedAndSticky,
@@ -1144,7 +1139,7 @@ export async function runApp(cliArgs, config) {
     }
 
     // 📖 Router upgrade banner: inline notification for existing users not yet seen router
-    if (!state.routerOnboardingOpen && !state.settingsOpen && !state.installEndpointsOpen && !state.toolInstallPromptOpen && !state.installedModelsOpen && !state.routerDashboardOpen && !state.tokenUsageOpen && !state.commandPaletteOpen && !state.recommendOpen && !state.feedbackOpen && !state.helpVisible && !state.changelogOpen && !state.incompatibleFallbackOpen) {
+    if (!state.routerOnboardingOpen && !state.settingsOpen && !state.installEndpointsOpen && !state.toolInstallPromptOpen && !state.installedModelsOpen && !state.routerDashboardOpen && !state.tokenUsageOpen && !state.commandPaletteOpen && !state.recommendOpen && !state.helpVisible && !state.changelogOpen && !state.incompatibleFallbackOpen) {
       const banner = overlays.renderRouterUpgradeBanner()
       if (banner) tableContent = banner + '\n' + tableContent
     }
@@ -1169,9 +1164,7 @@ export async function runApp(cliArgs, config) {
         ? tableContent + overlays.renderCommandPalette()
       : state.recommendOpen
         ? overlays.renderRecommend()
-        : state.feedbackOpen
-          ? overlays.renderFeedback()
-            : state.helpVisible
+        : state.helpVisible
                 ? overlays.renderHelp()
               : state.changelogOpen
                 ? overlays.renderChangelog()
@@ -1184,7 +1177,7 @@ export async function runApp(cliArgs, config) {
       process.stdout.write(ALT_LEAVE);
       console.error(chalk.red('\n[TUI Render Error] An error occurred during UI rendering.'));
       console.error(err);
-      console.error(chalk.yellow('\nPlease file an issue at https://github.com/vava-nessa/free-coding-models/issues or use the feedback form (I key) to report this to the author.'));
+      console.error(chalk.yellow('\nPlease file an issue at https://github.com/vava-nessa/free-coding-models/issues or join the Discord to report this to the author.'));
       process.exit(1);
     }
   }, Math.round(1000 / FPS))
@@ -1256,7 +1249,7 @@ export async function runApp(cliArgs, config) {
       process.stdout.write(ALT_LEAVE);
       console.error(chalk.red('\n[TUI Error] An error occurred in the ping loop.'));
       console.error(err);
-      console.error(chalk.yellow('\nPlease file an issue at https://github.com/vava-nessa/free-coding-models/issues or use the feedback form (I key) to report this to the author.'));
+      console.error(chalk.yellow('\nPlease file an issue at https://github.com/vava-nessa/free-coding-models/issues or join the Discord to report this to the author.'));
       process.exit(1);
     }
   }

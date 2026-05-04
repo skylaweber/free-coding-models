@@ -538,16 +538,24 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
       ? providerName.slice(0, 4) + '…'
       : providerName
     const source = themeColors.provider(r.providerKey, providerDisplay.padEnd(wSource))
-    const CIRCLED = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱','⑲','⑳']
-    let favoritePrefix = '  '
+    // 📖 Keycap emoji digits 1️⃣…🔟 mark the router fallback order on favorite rows.
+    // 📖 Capped at 10 — past that, ⭐ is shown because >10 priority slots make no
+    // 📖 practical sense for a router set the user has to reason about.
+    // 📖 IMPORTANT: keycap emojis render visually wider than 2 cells in many
+    // 📖 terminals/fonts (the variation selector + combining keycap glyph
+    // 📖 actually paints into a 3rd column). We always append a literal space
+    // 📖 after the prefix and reserve a 3-cell prefix slot so the emoji never
+    // 📖 bleeds into the first letter of the model name.
+    const KEYCAPS = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟']
+    let favoritePrefix = '   '
     if (r.isRecommended) {
-      favoritePrefix = '🎯'
-    } else if (r.isFavorite && r.favoriteRank < CIRCLED.length) {
-      favoritePrefix = CIRCLED[r.favoriteRank]
+      favoritePrefix = '🎯 '
+    } else if (r.isFavorite && r.favoriteRank < KEYCAPS.length) {
+      favoritePrefix = KEYCAPS[r.favoriteRank] + ' '
     } else if (r.isFavorite) {
-      favoritePrefix = '⭐'
+      favoritePrefix = '⭐ '
     }
-    const prefixDisplayWidth = 2
+    const prefixDisplayWidth = 3
     const nameWidth = Math.max(0, W_MODEL - prefixDisplayWidth)
     const name = favoritePrefix + r.label.slice(0, nameWidth).padEnd(nameWidth)
     const sweScore = r.sweScore ?? '—'
@@ -826,8 +834,6 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
       { text: '  •  ', key: null },
       { text: 'P Settings', key: 'p' },
       { text: '  •  ', key: null },
-      { text: 'J/K Navigate', key: null },
-      { text: '  •  ', key: null },
       { text: 'Ctrl+H Help', key: 'ctrl+h' },
     ]
     const footerRow1 = lines.length + 1 // 📖 1-based terminal row (line hasn't been pushed yet)
@@ -858,8 +864,6 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
       themeColors.dim(`  •  `) +
       hotkey('P', ' Settings') +
       themeColors.dim(`  •  `) +
-      themeColors.dim('J/K Navigate') +
-      themeColors.dim(`  •  `) +
       themeColors.dim('Ctrl+H Help')
     )
 
@@ -872,11 +876,7 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
         { text: '  •  ', key: null },
         { text: 'Q Smart Recommend', key: 'q' },
         { text: '  •  ', key: null },
-        { text: 'Shift+R Router', key: 'shift+r' },
-        { text: '  •  ', key: null },
         { text: 'G Theme', key: 'g' },
-        { text: '  •  ', key: null },
-        { text: 'I Feedback, bugs & requests', key: 'i' },
       ]
       const footerRow2 = lines.length + 1
       let xPos = 1
@@ -893,22 +893,16 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
     lines.push(
       '  ' + paletteLabel + themeColors.dim(`  •  `) +
       hotkey('Q', ' Smart Recommend') + themeColors.dim(`  •  `) +
-      hotkey('Shift+R', ' Router') + themeColors.dim(`  •  `) +
-      hotkey('G', ' Theme') + themeColors.dim(`  •  `) +
-      hotkey('I', ' Feedback, bugs & requests')
+      hotkey('G', ' Theme')
     )
-    // 📖 Proxy status is now shown via the badge in line 2 above — no need for a dedicated line
+    // 📖 Slim credits line — Contributors / Buy me a coffee moved out of the
+    // 📖 footer to reduce visual noise. Discord, changelog and exit hints now
+    // 📖 live in the onboarding screen, Settings and the Help overlay.
     const footerLine =
       themeColors.footerLove('  Made with 💖 & ☕ by \x1b]8;;https://github.com/vava-nessa\x1b\\vava-nessa\x1b]8;;\x1b\\') +
       themeColors.dim('  •  ') +
       '⭐ ' +
-      themeColors.link('\x1b]8;;https://github.com/vava-nessa/free-coding-models\x1b\\Star on GitHub\x1b]8;;\x1b\\') +
-      themeColors.dim('  •  ') +
-      '🤝 ' +
-      themeColors.warning('\x1b]8;;https://github.com/vava-nessa/free-coding-models/graphs/contributors\x1b\\Contributors\x1b]8;;\x1b\\') +
-      themeColors.dim('  •  ') +
-      '☕ ' +
-      themeColors.footerCoffee('\x1b]8;;https://buymeacoffee.com/vavanessadev\x1b\\Buy me a coffee\x1b]8;;\x1b\\')
+      themeColors.link('\x1b]8;;https://github.com/vava-nessa/free-coding-models\x1b\\Star on GitHub\x1b]8;;\x1b\\')
     lines.push(footerLine)
 
     if (versionStatus.isOutdated) {
@@ -925,17 +919,17 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
       _lastLayout.updateBannerRow = 0
     }
 
-    // 📖 Final footer line: changelog + optional active text-filter badge + exit hint.
+    // 📖 Optional active text-filter badge — surfaced inline if a custom filter is active.
+    // 📖 Changelog moved to Settings (P), Ctrl+C Exit moved to Help (Ctrl+H), Discord
+    // 📖 moved to onboarding + Settings — no more orphan hint lines down here.
     let filterBadge = ''
     if (hasCustomFilter) {
       const normalizedFilter = customTextFilter.trim().replace(/\s+/g, ' ')
       const filterPrefix = 'X Disable filter: "'
       const filterSuffix = '"'
-      const separatorPlain = '  •  '
-      const baseFooterPlain = '  N Changelog' + separatorPlain + 'Ctrl+C Exit'
       const baseBadgeWidth = displayWidth(` ${filterPrefix}${filterSuffix} `)
       const availableFilterWidth = terminalCols > 0
-        ? Math.max(8, terminalCols - displayWidth(baseFooterPlain) - displayWidth(separatorPlain) - baseBadgeWidth)
+        ? Math.max(8, terminalCols - 4 - baseBadgeWidth)
         : normalizedFilter.length
       const visibleFilter = normalizedFilter.length > availableFilterWidth
         ? `${normalizedFilter.slice(0, Math.max(3, availableFilterWidth - 3))}...`
@@ -943,42 +937,24 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
       filterBadge = chalk.bgYellow.black.bold(` ${filterPrefix}${visibleFilter}${filterSuffix} `)
     }
 
-    // 📖 Mouse support: track last footer line hotkey zones
-    {
-      const lastFooterRow = lines.length + 1 // 📖 1-based terminal row (line about to be pushed)
-      const parts = [
-        { text: '  ', key: null },
-        { text: 'N Changelog', key: 'n' },
-      ]
-      if (hasCustomFilter) {
-        parts.push({ text: '  •  ', key: null })
-        // 📖 X key clears filter — compute width from rendered badge text
-        const badgePlain = `X Disable filter: "${customTextFilter.trim().replace(/\s+/g, ' ')}"`
-        parts.push({ text: ` ${badgePlain} `, key: 'x' })
-      }
-      let xPos = 1
-      for (const part of parts) {
-        const w = displayWidth(part.text)
-        if (part.key) footerHotkeys.push({ key: part.key, row: lastFooterRow, xStart: xPos, xEnd: xPos + w - 1 })
-        xPos += w
-      }
+    if (hasCustomFilter) {
+      // 📖 Mouse support: register click zone for the X-clear filter badge
+      const lastFooterRow = lines.length + 1
+      const badgePlain = `X Disable filter: "${customTextFilter.trim().replace(/\s+/g, ' ')}"`
+      const fullText = '  ' + ` ${badgePlain} `
+      const xStart = 3 // 📖 after the leading 2 spaces
+      const xEnd = xStart + displayWidth(` ${badgePlain} `) - 1
+      footerHotkeys.push({ key: 'x', row: lastFooterRow, xStart, xEnd })
+      void fullText
+      lines.push('  ' + filterBadge)
     }
 
     const releaseLabel = lastReleaseDate
       ? chalk.rgb(255, 182, 193)(`Last release: ${lastReleaseDate}`)
       : ''
 
-    lines.push(
-      '  ' + themeColors.hotkey('N') + themeColors.dim(' Changelog') +
-      (filterBadge
-        ? themeColors.dim('  •  ') + filterBadge
-        : '') +
-      themeColors.dim('  •  ') +
-      themeColors.dim('Ctrl+C Exit') +
-      (releaseLabel ? themeColors.dim('  •  ') + releaseLabel : '')
-    )
-
-    // 📖 Router token stats + daemon status in the footer (shown when router is enabled)
+    // 📖 Router token stats + daemon status — Shift+R Router shown highlighted
+    // 📖 when the daemon is not running so it's the obvious entry point.
     if (routerFooterRunning) {
       const todayStr = formatTokenTotalCompact(routerFooterTodayTokens)
       const allTimeStr = formatTokenTotalCompact(routerFooterAllTimeTokens)
@@ -989,30 +965,28 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
         themeColors.dim('Router:') + ' ' + setLabel +
         themeColors.dim('  •  Today:') + ' ' + themeColors.textBold(todayStr + ' tok') +
         themeColors.dim('  •  All-time:') + ' ' + themeColors.textBold(allTimeStr + ' tok') +
-        themeColors.dim('  •  ' + reqStr + ' req')
+        themeColors.dim('  •  ' + reqStr + ' req') +
+        themeColors.dim('  •  ') + hotkey('Shift+R', ' Router') +
+        (releaseLabel ? themeColors.dim('  •  ') + releaseLabel : '')
       )
     } else {
+      // 📖 Highlighted Shift+R Router badge so the daemon entry point pops.
+      const routerBadge = chalk.bgRgb(0, 60, 0).rgb(57, 255, 20).bold(' Shift+R Router ')
       lines.push(
         '  ' + themeColors.error('○') + ' ' +
         themeColors.dim('Router:') + ' ' + themeColors.dim('daemon not running') +
-        themeColors.dim('  •  Shift+R Dashboard')
+        themeColors.dim('  •  ') + routerBadge +
+        (releaseLabel ? themeColors.dim('  •  ') + releaseLabel : '')
       )
     }
-
-    // 📖 Discord link at the very bottom of the TUI
-    lines.push(
-      '  💬 ' +
-      themeColors.footerDiscord('\x1b]8;;https://discord.gg/ZTNFHvvCkU\x1b\\Join the Discord\x1b]8;;\x1b\\') +
-      themeColors.dim(' → ') +
-      themeColors.footerDiscord('https://discord.gg/ZTNFHvvCkU')
-    )
   } else {
-    // 📖 Collapsed footer: single line with toggle hint
+    // 📖 Collapsed footer: minimal toggle hint. Ctrl+C Exit lives in Help (Ctrl+H).
     lines.push(
       '  ' + themeColors.hotkey('Ctrl+O') + themeColors.dim(' Toggle Footer') +
       themeColors.dim('  •  ') +
       themeColors.hotkey('Shift+R') + themeColors.dim(' Router') +
-      themeColors.dim('  •  Ctrl+C Exit')
+      themeColors.dim('  •  ') +
+      themeColors.hotkey('Ctrl+H') + themeColors.dim(' Help')
     )
   }
 

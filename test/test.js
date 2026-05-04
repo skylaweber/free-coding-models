@@ -1134,7 +1134,9 @@ describe('renderTable outdated footer banner', () => {
 
     assert.match(output, new RegExp(`UPDATE AVAILABLE — v${escapeRegex(localVersion)} → v9\\.9\\.9`))
     assert.match(output, /Click here or press Shift\+U to update/)
-    assert.match(output, /UPDATE AVAILABLE.*\x1B\[K\n.*N Changelog.*Ctrl\+C Exit/)
+    // 📖 After the update banner the next line is now the Router status row
+    // 📖 (Changelog moved to Settings, Ctrl+C Exit moved to Help overlay).
+    assert.match(output, /UPDATE AVAILABLE.*\x1B\[K\n.*Router:/)
   })
 
   it('stays quiet when no newer version is known', () => {
@@ -1181,8 +1183,9 @@ describe('renderTable outdated footer banner', () => {
       'deep'
     )
 
+    // 📖 Footer was slimmed: changelog moved to Settings, exit hint moved to Help.
+    // 📖 The X-clear filter badge now lives on its own dedicated footer line.
     assert.match(output, /X Disable filter: "deep"/)
-    assert.match(output, /N Changelog[\s\S]*X Disable filter: "deep"[\s\S]*Ctrl\+C Exit/)
   })
 
   it('stays quiet in dev-mode render paths even if npm has a newer published version', () => {

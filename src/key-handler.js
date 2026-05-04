@@ -8,7 +8,7 @@
  *   tool launch actions. It also keeps the live key bindings aligned with the
  *   highlighted letters shown in the table headers.
  *
- *   📖 Key I opens the unified "Feedback, bugs & requests" overlay.
+ *   📖 Key I opens the changelog overlay.
  *
  *   It also owns the "test key" model selection used by the Settings overlay.
  *   Anonymous telemetry hooks for model launches and a few high-signal settings
@@ -291,7 +291,6 @@ export function createKeyHandler(ctx) {
     sendUsageTelemetry,
     startRecommendAnalysis,
     stopRecommendAnalysis,
-    sendBugReport,
     stopUi,
     ping,
     getPingModel,
@@ -950,12 +949,7 @@ export function createKeyHandler(ctx) {
     state.installEndpointsResult = null
   }
 
-  function openFeedbackOverlay() {
-    state.feedbackOpen = true
-    state.bugReportBuffer = ''
-    state.bugReportStatus = 'idle'
-    state.bugReportError = null
-  }
+
 
   function openChangelogOverlay() {
     state.changelogOpen = true
@@ -1115,7 +1109,7 @@ export function createKeyHandler(ctx) {
       || state.installedModelsOpen
       || state.routerDashboardOpen
       || state.recommendOpen
-      || state.feedbackOpen
+
       || state.helpVisible
       || state.changelogOpen
   }
@@ -1303,7 +1297,7 @@ export function createKeyHandler(ctx) {
         state.helpScrollOffset = 0
         return
       case 'open-changelog': return openChangelogOverlay()
-      case 'open-feedback': return openFeedbackOverlay()
+
       case 'open-recommend': return openRecommendOverlay()
       case 'open-router-dashboard': return openRouterDashboardOverlay(state)
       case 'open-token-usage': return openTokenUsageOverlay()
@@ -1433,7 +1427,7 @@ export function createKeyHandler(ctx) {
       return
     }
 
-    if (!state.feedbackOpen && !state.settingsEditMode && !state.settingsAddKeyMode && key.name === 'g' && !key.ctrl && !key.meta) {
+    if (!state.settingsEditMode && !state.settingsAddKeyMode && key.name === 'g' && !key.ctrl && !key.meta) {
       cycleGlobalTheme()
       return
     }
@@ -1889,72 +1883,7 @@ export function createKeyHandler(ctx) {
       return
     }
 
-    // 📖 Feedback overlay: intercept ALL keys while overlay is active.
-    // 📖 Enter → send to Discord, Esc → cancel, Backspace → delete char, printable → append to buffer.
-    if (state.feedbackOpen) {
-      if (key.ctrl && key.name === 'c') { exit(0); return }
 
-      if (key.name === 'escape') {
-        // 📖 Cancel feedback — close overlay
-        state.feedbackOpen = false
-        state.bugReportBuffer = ''
-        state.bugReportStatus = 'idle'
-        state.bugReportError = null
-        return
-      }
-
-      if (key.name === 'return') {
-        // 📖 Send feedback to Discord webhook
-        const message = state.bugReportBuffer.trim()
-        if (message.length > 0 && state.bugReportStatus !== 'sending') {
-          state.bugReportStatus = 'sending'
-          const result = await sendBugReport(message)
-          if (result.success) {
-            // 📖 Success — show confirmation briefly, then close overlay after 3 seconds
-            state.bugReportStatus = 'success'
-            setTimeout(() => {
-              state.feedbackOpen = false
-              state.bugReportBuffer = ''
-              state.bugReportStatus = 'idle'
-              state.bugReportError = null
-            }, 3000)
-          } else {
-            // 📖 Error — show error message, keep overlay open
-            state.bugReportStatus = 'error'
-            state.bugReportError = result.error || 'Unknown error'
-          }
-        }
-        return
-      }
-
-      if (key.name === 'backspace') {
-        // 📖 Don't allow editing while sending or after success
-        if (state.bugReportStatus === 'sending' || state.bugReportStatus === 'success') return
-        state.bugReportBuffer = state.bugReportBuffer.slice(0, -1)
-        // 📖 Clear error status when user starts editing again
-        if (state.bugReportStatus === 'error') {
-          state.bugReportStatus = 'idle'
-          state.bugReportError = null
-        }
-        return
-      }
-
-      // 📖 Append printable characters (str is the raw character typed)
-      // 📖 Limit to 500 characters (Discord embed description limit)
-      if (str && str.length === 1 && !key.ctrl && !key.meta) {
-        // 📖 Don't allow editing while sending or after success
-        if (state.bugReportStatus === 'sending' || state.bugReportStatus === 'success') return
-        if (state.bugReportBuffer.length < 500) {
-          state.bugReportBuffer += str
-          // 📖 Clear error status when user starts editing again
-          if (state.bugReportStatus === 'error') {
-            state.bugReportStatus = 'idle'
-            state.bugReportError = null
-          }
-        }
-      }
-      return
-    }
 
     // 📖 Help overlay: full keyboard navigation + key swallowing while overlay is open.
     if (state.helpVisible) {
@@ -2670,11 +2599,7 @@ export function createKeyHandler(ctx) {
       return
     }
 
-    // 📖 I key: open Feedback overlay (anonymous Discord feedback)
-    if (key.name === 'i') {
-      openFeedbackOverlay()
-      return
-    }
+
 
     // 📖 W cycles the supported ping modes:
     // 📖 speed (2s) → normal (10s) → slow (30s) → forced (4s) → speed.
@@ -3002,10 +2927,7 @@ export function createMouseEventHandler(ctx) {
         }
         return
       }
-      if (state.feedbackOpen) {
-        // 📖 Feedback overlay doesn't scroll — ignore
-        return
-      }
+
       if (state.commandPaletteOpen) {
         // 📖 Command palette: scroll the results list
         const count = state.commandPaletteResults?.length || 0
@@ -3147,12 +3069,7 @@ export function createMouseEventHandler(ctx) {
       return
     }
 
-    if (state.feedbackOpen) {
-      // 📖 Feedback overlay: click anywhere closes (no scroll, no cursor)
-      state.feedbackOpen = false
-      state.feedbackInput = ''
-      return
-    }
+
 
     if (state.helpVisible) {
       // 📖 Help overlay: click anywhere closes (same as K or Escape)

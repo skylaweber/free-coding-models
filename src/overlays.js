@@ -4,14 +4,12 @@
  *
  * @details
  *   This module centralizes all overlay rendering in one place:
- *   - Settings, Install Endpoints, Command Palette, Help, Smart Recommend, Feedback, Changelog, Router Dashboard
+ *   - Settings, Install Endpoints, Command Palette, Help, Smart Recommend, Changelog, Router Dashboard
  *   - Settings diagnostics for provider key tests, including wrapped retry/error details
  *   - Recommend analysis timer orchestration and progress updates
  *
  *   The factory pattern keeps stateful UI logic isolated while still
  *   allowing the main CLI to control shared state and dependencies.
- *
- *   📖 Feedback overlay (I key) combines feature requests + bug reports in one left-aligned input
  *
  *   → Functions:
  *   - `createOverlayRenderers` — returns renderer + analysis helpers + overlayLayout
@@ -299,12 +297,16 @@ export function createOverlayRenderers(state, deps) {
     }
     lines.push('')
 
-    // 📖 Footer with credits
+    // 📖 Footer with credits + community links — Discord and Buy me a coffee
+    // 📖 live here (and in the onboarding) instead of the main TUI footer to
+    // 📖 keep the table chrome lean.
     lines.push('')
     lines.push(
       themeColors.dim('  ') +
       themeColors.footerLove('Made with 💖 & ☕ by ') +
       themeColors.link('\x1b]8;;https://github.com/vava-nessa\x1b\\vava-nessa\x1b]8;;\x1b\\') +
+      themeColors.dim('  •  💬 ') +
+      themeColors.footerDiscord('\x1b]8;;https://discord.gg/ZTNFHvvCkU\x1b\\Join the Discord\x1b]8;;\x1b\\') +
       themeColors.dim('  •  ☕ ') +
       themeColors.footerCoffee('\x1b]8;;https://buymeacoffee.com/vavanessadev\x1b\\Buy me a coffee\x1b]8;;\x1b\\') +
       themeColors.dim('  •  ') +
@@ -884,7 +886,7 @@ export function createOverlayRenderers(state, deps) {
     lines.push(`  ${label('CTX')}         Context window size (128k, 200k, 256k, 1m, etc.)  ${hint('Sort:')} ${key('C')}`)
     lines.push(`              ${hint('Bigger context = the model can read more of your codebase at once without forgetting.')}`)
     lines.push('')
-    lines.push(`  ${label('Model')}       Model name (①②③ = favorite order)  ${hint('Sort:')} ${key('M')}  ${hint('Favorite:')} ${key('F')}`)
+    lines.push(`  ${label('Model')}       Model name (1️⃣2️⃣3️⃣ = favorite order)  ${hint('Sort:')} ${key('M')}  ${hint('Favorite:')} ${key('F')}`)
     lines.push(`              ${hint('Star the ones you like. Press Y to switch between pinned mode and normal filter/sort mode.')}`)
     lines.push('')
     lines.push(`  ${label('Provider')}    Provider source (NIM, Groq, Cerebras, etc.)  ${hint('Sort:')} ${key('O')}  ${hint('Cycle:')} ${key('D')}`)
@@ -925,14 +927,14 @@ export function createOverlayRenderers(state, deps) {
     lines.push(`  ${key('Ctrl+P')}  Open ⚡️ command palette  ${hint('(search and run actions quickly)')}`)
     lines.push(`  ${key('E')}  Toggle configured models only  ${hint('(enabled by default)')}`)
     lines.push(`  ${key('Z')}  Cycle tool mode  ${hint('(📦 OpenCode → π Pi → 🪼 jcode → 📦 Desktop → 🦞 OpenClaw → 💘 Crush → 🪿 Goose → 🛠 Aider → 🐉 Qwen → 🤲 OpenHands → ⚡ Amp → 🦘 Rovo → ♊ Gemini)')}`)
-    lines.push(`  ${key('F')}  Toggle favorite on selected row  ${hint('(①②③ = router fallback order)')}`)
+    lines.push(`  ${key('F')}  Toggle favorite on selected row  ${hint('(1️⃣2️⃣3️⃣ = router fallback order, capped at 🔟)')}`)
     lines.push(`  ${key('⇧↑/⇧↓')}  Reorder selected favorite up/down  ${hint('(changes router priority)')}`)
     lines.push(`  ${key('Y')}  Toggle favorites mode  ${hint('(Pinned + always visible ↔ Normal filter/sort behavior)')}`)
     lines.push(`  ${key('X')}  Clear active text filter  ${hint('(remove custom query applied from ⚡️ Command Palette)')}`)
     lines.push(`  ${key('Q')}  Smart Recommend  ${hint('(🎯 find the best model for your task — questionnaire + live analysis)')}`)
     lines.push(`  ${key('Shift+R')}  Router Dashboard  ${hint('(🔀 daemon health, circuit breakers, tokens, request log)')}`)
     lines.push(`  ${key('G')}  Cycle theme  ${hint('(auto → dark → light)')}`)
-    lines.push(`  ${themeColors.errorBold('I')}  Feedback, bugs & requests  ${hint('(📝 send anonymous feedback, bug reports, or feature requests)')}`)
+
     lines.push(`  ${key('P')}  Open settings  ${hint('(manage API keys, provider toggles, updates, legacy cleanup)')}`)
       // 📖 Profile system removed - API keys now persist permanently across all sessions
     lines.push(`  ${key('Ctrl+P')}  Reset view settings  ${hint('(search "Reset view" in the command palette)')}`)
@@ -1168,92 +1170,6 @@ export function createOverlayRenderers(state, deps) {
       const target = visible[Math.floor(Math.random() * visible.length)]
       pingModel(target).catch(() => {})
     }, PING_RATE)
-  }
-
-  // ─── Feedback overlay renderer ────────────────────────────────────────────
-  // 📖 renderFeedback: Draw the overlay for anonymous Discord feedback.
-  // 📖 Shows an input field where users can type feedback, bug reports, or any comments.
-  function renderFeedback() {
-    const EL = '\x1b[K'
-    const lines = []
-
-    // 📖 Calculate available space for multi-line input (dynamic based on terminal width)
-    const maxInputWidth = state.terminalCols - 8 // 8 = padding (4 spaces each side)
-    const maxInputLines = 10 // Show up to 10 lines of input
-    
-    // 📖 Split buffer into lines for display (with wrapping)
-    const wrapText = (text, width) => {
-      const words = text.split(' ')
-      const lines = []
-      let currentLine = ''
-      
-      for (const word of words) {
-        const testLine = currentLine ? currentLine + ' ' + word : word
-        if (testLine.length <= width) {
-          currentLine = testLine
-        } else {
-          if (currentLine) lines.push(currentLine)
-          currentLine = word
-        }
-      }
-      if (currentLine) lines.push(currentLine)
-      return lines
-    }
-
-    const inputLines = wrapText(state.bugReportBuffer, maxInputWidth)
-    const displayLines = inputLines.slice(0, maxInputLines)
-
-    // 📖 Branding header
-    lines.push('')
-    lines.push(`  ${themeColors.accent('🚀')} ${themeColors.accentBold('free-coding-models')} ${themeColors.dim(`v${LOCAL_VERSION}`)}`)
-    lines.push(`  ${themeColors.successBold('📝 Feedback, bugs & requests')}`)
-    lines.push('')
-    lines.push(themeColors.dim("  — don't hesitate to send us feedback, bug reports, or just your feeling about the app"))
-    lines.push('')
-    
-    // 📖 Status messages (if any)
-    if (state.bugReportStatus === 'sending') {
-      lines.push(`  ${themeColors.warning('⏳ Sending...')}`)
-      lines.push('')
-    } else if (state.bugReportStatus === 'success') {
-      lines.push(`  ${themeColors.successBold('✅ Successfully sent!')} ${themeColors.dim('Closing overlay in 3 seconds...')}`)
-      lines.push('')
-      lines.push(`  ${themeColors.dim('Thank you for your feedback! It has been sent to the project team.')}`)
-      lines.push('')
-    } else if (state.bugReportStatus === 'error') {
-      lines.push(`  ${themeColors.error('❌ Error:')} ${themeColors.warning(state.bugReportError || 'Failed to send')}`)
-      lines.push(`  ${themeColors.dim('Press Backspace to edit, or Esc to close')}`)
-      lines.push('')
-    } else {
-      lines.push(`  ${themeColors.dim('Type your feedback below. Press Enter to send, Esc to cancel.')}`)
-      lines.push(`  ${themeColors.dim('Your message will be sent anonymously to the project team.')}`)
-      lines.push('')
-    }
-
-    // 📖 Simple input area – left-aligned, framed by horizontal lines
-    lines.push(`  ${themeColors.info('Message')} (${state.bugReportBuffer.length}/500 chars)`)
-    lines.push(`  ${themeColors.dim('─'.repeat(maxInputWidth))}`)
-    // 📖 Input lines — left-aligned, or placeholder when empty
-    if (displayLines.length > 0) {
-      for (const line of displayLines) {
-        lines.push(`    ${line}`)
-      }
-      // 📖 Show cursor on last line
-      if (state.bugReportStatus === 'idle' || state.bugReportStatus === 'error') {
-        lines[lines.length - 1] += themeColors.accentBold('▏')
-      }
-    } else {
-      const placeholderBR = state.bugReportStatus === 'idle' ? chalk.italic.rgb(...getProviderRgb('googleai'))('Type your message here...') : ''
-      lines.push(`    ${placeholderBR}${themeColors.accentBold('▏')}`)
-    }
-    lines.push(`  ${themeColors.dim('─'.repeat(maxInputWidth))}`)
-    lines.push('')
-    lines.push(themeColors.dim('  Enter Send  •  Esc Cancel  •  Backspace Delete'))
-
-    // 📖 Apply overlay tint and return
-    const tintedLines = tintOverlayLines(lines, themeColors.overlayBgFeedback, state.terminalCols)
-    const cleared = tintedLines.map(l => l + EL)
-    return cleared.join('\n')
   }
 
   // ─── Changelog overlay renderer ───────────────────────────────────────────
@@ -1657,6 +1573,12 @@ export function createOverlayRenderers(state, deps) {
         lines.push('')
       }
       lines.push(themeColors.dim('  ↑↓ Navigate  •  Enter Select  •  Esc Skip for now'))
+      lines.push('')
+      lines.push(
+        themeColors.dim('  💬 ') +
+        themeColors.footerDiscord('\x1b]8;;https://discord.gg/ZTNFHvvCkU\x1b\\Join the Discord community\x1b]8;;\x1b\\') +
+        themeColors.dim('  •  Get help, share feedback, follow updates')
+      )
     }
 
     const targetLine = cursorLineByRow[state.routerOnboardingCursor] ?? 0
@@ -1694,7 +1616,6 @@ export function createOverlayRenderers(state, deps) {
     renderCommandPalette,
     renderHelp,
     renderRecommend,
-    renderFeedback,
     renderChangelog,
     renderInstalledModels,
     renderRouterDashboard,
