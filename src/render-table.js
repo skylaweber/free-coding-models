@@ -538,24 +538,14 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
       ? providerName.slice(0, 4) + '…'
       : providerName
     const source = themeColors.provider(r.providerKey, providerDisplay.padEnd(wSource))
-    // 📖 Keycap emoji digits 1️⃣…🔟 mark the router fallback order on favorite rows.
-    // 📖 Capped at 10 — past that, ⭐ is shown because >10 priority slots make no
-    // 📖 practical sense for a router set the user has to reason about.
-    // 📖 IMPORTANT: keycap emojis render visually wider than 2 cells in many
-    // 📖 terminals/fonts (the variation selector + combining keycap glyph
-    // 📖 actually paints into a 3rd column). We always append a literal space
-    // 📖 after the prefix and reserve a 3-cell prefix slot so the emoji never
-    // 📖 bleeds into the first letter of the model name.
-    const KEYCAPS = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟']
-    let favoritePrefix = '   '
+    // 📖 Favorites marked with a single ⭐ — no ranking numbers
+    let favoritePrefix = ''
     if (r.isRecommended) {
       favoritePrefix = '🎯 '
-    } else if (r.isFavorite && r.favoriteRank < KEYCAPS.length) {
-      favoritePrefix = KEYCAPS[r.favoriteRank] + ' '
     } else if (r.isFavorite) {
       favoritePrefix = '⭐ '
     }
-    const prefixDisplayWidth = 3
+    const prefixDisplayWidth = displayWidth(favoritePrefix)
     const nameWidth = Math.max(0, W_MODEL - prefixDisplayWidth)
     const name = favoritePrefix + r.label.slice(0, nameWidth).padEnd(nameWidth)
     const sweScore = r.sweScore ?? '—'
@@ -831,7 +821,7 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
       { text: '  ', key: null },
       { text: 'F Favorite', key: 'f' },
       { text: '  •  ', key: null },
-      { text: 'Y Fav Mode', key: 'y' },
+      { text: 'Y  Fav Mode', key: 'y' },
       { text: '  •  ', key: null },
       { text: tierFilterMode > 0 ? `T Tier (${activeTierLabel})` : 'T Tier', key: 't' },
       { text: '  •  ', key: null },
@@ -841,7 +831,7 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
       { text: '  •  ', key: null },
       { text: 'P Settings', key: 'p' },
       { text: '  •  ', key: null },
-      { text: 'Ctrl+H Help', key: 'ctrl+h' },
+      { text: 'I Help', key: 'i' },
     ]
     const footerRow1 = lines.length + 1 // 📖 1-based terminal row (line hasn't been pushed yet)
     let xPos = 1
@@ -857,7 +847,7 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
     lines.push(
       '  ' + hotkey('F', ' Favorite') +
       themeColors.dim(`  •  `) +
-      activeHotkey('Y', 'Fav Mode', favoritesModeBg) +
+      hotkey('Y', ' Fav Mode') +
       themeColors.dim(`  •  `) +
       (tierFilterMode > 0
         ? activeHotkey('T', ` Tier (${activeTierLabel})`, getTierRgb(activeTierLabel))
@@ -871,7 +861,7 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
       themeColors.dim(`  •  `) +
       hotkey('P', ' Settings') +
       themeColors.dim(`  •  `) +
-      themeColors.dim('Ctrl+H Help')
+      hotkey('I', ' Help')
     )
 
     // 📖 Line 2: command palette + GitHub
@@ -897,7 +887,7 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
     const starLink = '⭐ ' + themeColors.link('\x1b]8;;https://github.com/vava-nessa/free-coding-models\x1b\\GitHub\x1b]8;;\x1b\\')
     lines.push(
       '  ' + paletteLabel + themeColors.dim(`  •  `) + starLink + themeColors.dim(`  •  `) +
-      themeColors.footerLove('Made with 💖 & ☕ by vava-nessa')
+      chalk.rgb(255, 168, 209).bold('\x1b]8;;https://x.com/vavanessadev\x1b\\Support me by following me on X ! @vavanessadev\x1b]8;;\x1b\\')
     )
 
     if (versionStatus.isOutdated) {
@@ -966,22 +956,21 @@ export function renderTable(results, pendingPings, frame, cursor = null, sortCol
       )
     } else {
       // 📖 Highlighted Shift+R Router badge so the daemon entry point pops.
-      const routerBadge = chalk.bgRgb(0, 60, 0).rgb(57, 255, 20).bold(' Shift+R Router ')
+      const routerBadge = chalk.bgRgb(88, 86, 214).rgb(255, 255, 255).bold(' Shift+R Router ')
       lines.push(
-        '  ' + themeColors.error('○') + ' ' +
-        themeColors.dim('Router:') + ' ' + themeColors.dim('daemon not running') +
-        themeColors.dim('  •  ') + routerBadge +
+        '  ' + routerBadge + themeColors.dim('  •  ') + themeColors.error('○') + ' ' +
+        themeColors.dim('daemon not running') +
         (releaseLabel ? themeColors.dim('  •  ') + releaseLabel : '')
       )
     }
   } else {
-    // 📖 Collapsed footer: minimal toggle hint. Ctrl+C Exit lives in Help (Ctrl+H).
+    // 📖 Collapsed footer: minimal toggle hint. Exit lives in Help.
     lines.push(
       '  ' + themeColors.hotkey('Ctrl+O') + themeColors.dim(' Toggle Footer') +
       themeColors.dim('  •  ') +
       themeColors.hotkey('Shift+R') + themeColors.dim(' Router') +
       themeColors.dim('  •  ') +
-      themeColors.hotkey('Ctrl+H') + themeColors.dim(' Help')
+      themeColors.hotkey('I') + themeColors.dim(' Help')
     )
   }
 

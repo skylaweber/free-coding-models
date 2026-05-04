@@ -2,7 +2,7 @@
   <img src="https://img.shields.io/npm/v/free-coding-models?color=76b900&label=npm&logo=npm" alt="npm version">
   <img src="https://img.shields.io/node/v/free-coding-models?color=76b900&logo=node.js" alt="node version">
   <img src="https://img.shields.io/npm/l/free-coding-models?color=76b900" alt="license">
-  <img src="https://img.shields.io/badge/models-180-76b900?logo=nvidia" alt="models count">
+  <img src="https://img.shields.io/badge/models-170+-76b900?logo=nvidia" alt="models count">
   <img src="https://img.shields.io/badge/providers-16-blue" alt="providers count">
 </p>
 
@@ -16,7 +16,7 @@
 
 <p align="center">
   <strong>Find the fastest free coding model in seconds</strong><br>
-  <sub>Track 180 models across 16 vetted free or free-limited AI providers in real time</sub><br>  <sub> Install Free API endpoints to your favorite AI coding tool: <br>📦 OpenCode, 📦 OpenCode Desktop, 📦 OpenCode WebUI, 🦞 OpenClaw, 💘 Crush, 🪿 Goose, 🛠 Aider, ⚡️ Kilo CLI, 🐉 Qwen Code, 🤲 OpenHands, ⚡ Amp, 🔮 Hermes, ▶️ Continue, 🧠 Cline, 🛠️ Xcode, π Pi, 🦘 Rovo or ♊ Gemini in one keystroke</sub>
+  <sub>Track ~170 models across ~15 vetted free or free-limited AI providers in real time</sub><br>  <sub> Install Free API endpoints to your favorite AI coding tool: <br>📦 OpenCode, 📦 OpenCode Desktop, 📦 OpenCode WebUI, 🦞 OpenClaw, 💘 Crush, 🪿 Goose, 🛠 Aider, ⚡️ Kilo CLI, 🐉 Qwen Code, 🤲 OpenHands, ⚡ Amp, 🔮 Hermes, ▶️ Continue, 🧠 Cline, 🛠️ Xcode, π Pi, 🦘 Rovo or ♊ Gemini in one keystroke</sub>
 </p>
 
 
@@ -62,7 +62,7 @@ create a free account on one of the [providers](#-list-of-free-ai-providers)
 
 ## 💡 Why this tool?
 
-There are **180 cataloged free or free-limited coding models** across 16 vetted providers. Which one is fastest right now? Which one is actually stable versus just lucky on the last ping?
+There are **~170 cataloged free or free-limited coding models** across ~15 vetted providers. Which one is fastest right now? Which one is actually stable versus just lucky on the last ping?
 
 This CLI pings them all in parallel, shows live latency, and calculates a **live Stability Score (0-100)**. Average latency alone is misleading if a model randomly spikes to 6 seconds; the stability score measures true reliability by combining **p95 latency** (30%), **jitter/variance** (30%), **spike rate** (20%), and **uptime** (20%). 
 
@@ -76,7 +76,7 @@ It then writes the model you pick directly into your coding tool's config — so
 
 Create a free account on one provider below to get started:
 
-**180 coding models** across 16 active providers, ranked by practical free-tier usefulness.
+**~170 coding models** across ~15 active providers, ranked by practical free-tier usefulness.
 
 | # | Provider | Models | Tier range | Free tier | Env var |
 |---|----------|--------|-----------|-----------|--------|
@@ -383,7 +383,7 @@ When a tool mode is active (via `Z`), models incompatible with that tool are hig
 
 ## ✨ Features
 
-- **Parallel pings** — all 174 API/Zen-callable models tested simultaneously via native `fetch` (180 total cataloged models including CLI-only Gemini rows)
+- **Parallel pings** — all ~165 API/Zen-callable models tested simultaneously via native `fetch` (~170 total cataloged models including CLI-only Gemini rows)
 - **Adaptive monitoring** — 2s burst for 60s → 10s normal → 30s idle
 - **Stability score** — composite 0–100 (p95 latency, jitter, spike rate, uptime)
 - **Smart ranking** — top 3 highlighted 🥇🥈🥉
@@ -422,7 +422,7 @@ We welcome contributions — issues, PRs, new provider integrations.
 
 ## ⚖️ Model Licensing & Commercial Use
 
-**Short answer:** The 180 cataloged models are API/CLI-served models where generated-output ownership is generally granted by the provider/model terms. Always verify current provider terms for high-stakes commercial use.
+**Short answer:** The ~170 cataloged models are API/CLI-served models where generated-output ownership is generally granted by the provider/model terms. Always verify current provider terms for high-stakes commercial use.
 
 ### Output Ownership
 

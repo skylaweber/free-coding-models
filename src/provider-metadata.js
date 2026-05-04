@@ -116,7 +116,7 @@ export const PROVIDER_METADATA = {
     rateLimits: 'Quota depends on GitHub/Copilot tier; no separate provider billing',
   },
   mistral: {
-    label: 'Mistral La Plateforme',
+    label: 'Mistral LP',
     color: chalk.rgb(255, 196, 120),
     signupUrl: 'https://console.mistral.ai/api-keys',
     signupHint: 'La Plateforme → API keys (MISTRAL_API_KEY)',

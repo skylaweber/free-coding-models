@@ -2671,8 +2671,8 @@ export function createKeyHandler(ctx) {
       return
     }
 
-    // 📖 Help overlay key: Ctrl+H = toggle help overlay
-    if (key.ctrl && key.name === 'h') {
+    // 📖 Help overlay key: I = toggle help overlay
+    if (key.name === 'i') {
       state.helpVisible = !state.helpVisible
       if (state.helpVisible) state.helpScrollOffset = 0
       return

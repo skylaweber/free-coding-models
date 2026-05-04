@@ -870,8 +870,9 @@ export function createOverlayRenderers(state, deps) {
     // 📖 Branding header
     lines.push(`  ${themeColors.accent('🚀')} ${themeColors.accentBold('free-coding-models')} ${themeColors.dim(`v${LOCAL_VERSION}`)}`)
     lines.push(`  ${heading('❓ Help & Keyboard Shortcuts')}`)
+    lines.push(`  ${themeColors.successBold('🔑 Yellow = active key')}`)
     lines.push('')
-    lines.push(`  ${hint('— ↑↓ / PgUp / PgDn / Home / End scroll • K or Esc close')}`)
+    lines.push(`  ${hint('— ↑↓ / PgUp / PgDn / Home / End scroll • K or ')}${themeColors.successBold('Esc close')}`)
     lines.push(`  ${heading('Columns')}`)
     lines.push('')
     lines.push(`  ${label('Rank')}        SWE-bench rank (1 = best coding score)  ${hint('Sort:')} ${key('R')}`)
@@ -939,7 +940,7 @@ export function createOverlayRenderers(state, deps) {
       // 📖 Profile system removed - API keys now persist permanently across all sessions
     lines.push(`  ${key('Ctrl+P')}  Reset view settings  ${hint('(search "Reset view" in the command palette)')}`)
     lines.push(`  ${key('N')}  Changelog  ${hint('(📋 browse all versions, Enter to view details)')}`)
-    lines.push(`  ${key('Ctrl+H')} / ${key('Esc')}  Show/hide this help`)
+    lines.push(`  ${key('I')} / ${key('Esc')}  Show/hide this help`)
     lines.push(`  ${key('Ctrl+C')}  Exit`)
     lines.push('')
     lines.push(`  ${heading('Settings (P)')}`)

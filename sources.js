@@ -383,7 +383,7 @@ export const sources = {
     models: githubModels,
   },
   mistral: {
-    name: 'Mistral La Plateforme',
+    name: 'Mistral LP',
     url: 'https://api.mistral.ai/v1/chat/completions',
     models: mistral,
   },
